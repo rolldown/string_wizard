@@ -1,12 +1,24 @@
 use crate::{MagicString, CowStr};
 
+pub struct JoinerOptions {
+    pub separator: Option<String>,
+}
+
 #[derive(Default)]
 pub struct Joiner<'s> {
     sources: Vec<MagicString<'s>>,
+    separator: Option<String>,
 }
 
 impl<'s> Joiner<'s> {
     // --- public
+    pub fn with_options(options: JoinerOptions) -> Self {
+        Self {
+            separator: options.separator,
+            ..Default::default()
+        }
+    }
+
     pub fn append(&mut self, source: MagicString<'s>) -> &mut Self {
         self.sources.push(source);
         self
@@ -32,7 +44,15 @@ impl<'s> Joiner<'s> {
     // --- private
 
     fn fragments(&'s self) -> impl Iterator<Item = &'s str> {
-        self.sources.iter().flat_map(|c| c.fragments())
+        let mut iter = self
+            .sources
+            .iter()
+            .flat_map(|c| self.separator.as_ref().map(|s| s.as_str()).into_iter().chain(c.fragments()));
+        // Drop the first separator
+        if self.separator.is_some() {
+            iter.next();
+        }
+        iter
     }
 
     

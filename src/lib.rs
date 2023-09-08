@@ -10,7 +10,7 @@ type CowStr<'s> = Cow<'s, str>;
 use chunk::Chunk;
 use index_vec::IndexVec;
 
-pub use crate::{magic_string::{MagicString, MagicStringOptions}, joiner::Joiner};
+pub use crate::{magic_string::{MagicString, MagicStringOptions}, joiner::{Joiner, JoinerOptions}};
 
 
 index_vec::define_index_type! {
@@ -22,7 +22,3 @@ type ChunkVec<'s> = IndexVec<ChunkIdx, Chunk<'s>>;
 index_vec::define_index_type! {
     struct SourceIdx = u32;
 }
-
-
-
-pub struct Bundle {}
