@@ -27,9 +27,14 @@ impl<'s> Chunk<'s> {
         intro_iter.chain(Some(source_frag)).chain(outro_iter)
     }
 
-    pub fn append_outro(&mut self, frag: CowStr<'s>) {
+    pub fn append(&mut self, frag: CowStr<'s>) {
         self.len += frag.len();
         self.outro.push(frag.into())
+    }
+
+    pub fn prepend(&mut self, frag: CowStr<'s>) {
+        self.len += frag.len();
+        self.intro.push(frag.into())
     }
 
     pub fn len(&self) -> usize {

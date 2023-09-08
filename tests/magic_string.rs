@@ -28,3 +28,17 @@ mod append {
         assert_eq!(s.to_string(), "abcdefghijklxyzxyz");
     }
 }
+
+mod prepend {
+    use super::*;
+    
+    #[test]
+    fn should_append_content() {
+        // should append content
+        let mut s = MagicString::new("abcdefghijkl");
+        s.prepend("xyz");
+        assert_eq!(s.to_string(), "xyzabcdefghijkl");
+        s.prepend("xyz");
+        assert_eq!(s.to_string(), "xyzxyzabcdefghijkl");
+    }
+}

@@ -42,7 +42,12 @@ impl<'s> MagicString<'s> {
     }
 
     pub fn append(&mut self, source: impl Into<CowStr<'s>>) -> &mut Self {
-        self.last_chunk_mut().append_outro(source.into());
+        self.last_chunk_mut().append(source.into());
+        self
+    }
+
+    pub fn prepend(&mut self, source: impl Into<CowStr<'s>>) -> &mut Self {
+        self.first_chunk_mut().prepend(source.into());
         self
     }
 
@@ -97,6 +102,11 @@ impl<'s> MagicString<'s> {
 
     fn last_chunk_mut(&mut self) -> &mut Chunk<'s> {
         let idx = self.chunk_by_end.get(&(self.source_len)).unwrap();
+        &mut self.chunks[*idx]
+    }
+
+    fn first_chunk_mut(&mut self) -> &mut Chunk<'s> {
+        let idx = self.chunk_by_start.get(&0).unwrap();
         &mut self.chunks[*idx]
     }
 }
