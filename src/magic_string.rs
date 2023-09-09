@@ -9,13 +9,14 @@ pub struct MagicStringOptions {
 
 #[derive(Default)]
 pub struct MagicString<'s> {
+    pub filename: Option<String>,
+    
     source: CowStr<'s>,
     source_len: u32,
     chunks: ChunkVec<'s>,
-    first_chunk: Option<ChunkIdx>,
+    first_chunk_idx: Option<ChunkIdx>,
     chunk_by_start: FxHashMap<u32, ChunkIdx>,
     chunk_by_end: FxHashMap<u32, ChunkIdx>,
-    pub filename: Option<String>,
 }
 
 impl<'s> MagicString<'s> {
@@ -34,7 +35,7 @@ impl<'s> MagicString<'s> {
             ..Default::default()
         };
         magic_string.split_at(source_len);
-        magic_string.first_chunk = Some(ChunkIdx::from_raw(0));
+        magic_string.first_chunk_idx = Some(ChunkIdx::from_raw(0));
 
         magic_string.filename = options.filename;
 
@@ -66,7 +67,7 @@ impl<'s> MagicString<'s> {
 
     fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         ChunkIter {
-            next: self.first_chunk,
+            next: self.first_chunk_idx,
             chunks: &self.chunks,
         }
     }

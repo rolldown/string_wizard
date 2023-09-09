@@ -1,4 +1,4 @@
-use crate::{CowStr, span::Span, ChunkIdx};
+use crate::{span::Span, ChunkIdx, CowStr};
 
 #[derive(Debug, Default)]
 pub struct Chunk<'s> {
@@ -6,7 +6,7 @@ pub struct Chunk<'s> {
     span: Span,
     outro: Vec<CowStr<'s>>,
     len: usize,
-    pub(crate) next: Option<ChunkIdx>
+    pub(crate) next: Option<ChunkIdx>,
 }
 
 impl<'s> Chunk<'s> {
@@ -41,3 +41,4 @@ impl<'s> Chunk<'s> {
         self.len
     }
 }
+
