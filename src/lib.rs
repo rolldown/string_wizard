@@ -4,7 +4,6 @@ mod span;
 mod joiner;
 mod magic_string;
 use std::borrow::Cow;
-mod intersperse_shim;
 
 type CowStr<'s> = Cow<'s, str>;
 

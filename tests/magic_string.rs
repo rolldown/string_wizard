@@ -29,6 +29,38 @@ mod append {
     }
 }
 
+mod prepend_append_left_right {
+    use super::*;
+
+    #[test]
+    fn preserves_intended_order() {
+        let mut s = MagicString::new("0123456789");
+        s.append_left(5, "A");
+        s.prepend_right(5, "a");
+        s.prepend_right(5, "b");
+        s.append_left(5, "B");
+        s.append_left(5, "C");
+        s.prepend_right(5, "c");
+
+        assert_eq!(s.to_string(), "01234ABCcba56789");
+        
+        s.prepend_left(5, "<");
+        s.prepend_left(5, "{");
+        assert_eq!(s.to_string(), "01234{<ABCcba56789");
+
+        s.append_right(5, ">");
+        s.append_right(5, "}");
+        assert_eq!(s.to_string(), "01234{<ABCcba>}56789");
+
+        s.append_left(5, "(");
+        s.append_left(5, "[");
+        assert_eq!(s.to_string(), "01234{<ABC([cba>}56789");
+
+        s.prepend_right(5, ")");
+        s.prepend_right(5, "]");
+        assert_eq!(s.to_string(), "01234{<ABC([])cba>}56789");
+    }
+}
 mod prepend {
     use super::*;
     
