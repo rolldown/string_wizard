@@ -14,7 +14,7 @@ impl Span {
         &source[self.start() as usize..self.end() as usize]
     }
 
-    pub fn size(&self) -> usize {
-        (self.1 - self.0) as usize
-    }
+    // pub fn size(&self) -> usize {
+    //     (self.1 - self.0) as usize
+    // }
 }

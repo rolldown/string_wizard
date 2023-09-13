@@ -113,7 +113,7 @@ impl<'s> MagicString<'s> {
     }
 
     pub fn len(&self) -> usize {
-        self.chunks.iter().map(|c| c.len()).sum()
+        self.fragments().map(|f| f.len()).sum()
     }
 
     pub fn to_string(&self) -> String {

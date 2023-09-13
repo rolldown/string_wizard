@@ -7,14 +7,12 @@ pub struct Chunk<'str> {
     intro: VecDeque<CowStr<'str>>,
     span: Span,
     outro: VecDeque<CowStr<'str>>,
-    len: usize,
     pub(crate) next: Option<ChunkIdx>,
 }
 
 impl<'s> Chunk<'s> {
     pub fn new(span: Span) -> Self {
         Self {
-            len: span.size(),
             span,
             ..Default::default()
         }
@@ -65,10 +63,6 @@ impl<'str> Chunk<'str> {
         let source_frag = self.span.text(original_source.as_ref());
         let outro_iter = self.outro.iter().map(|frag| frag.as_ref());
         intro_iter.chain(Some(source_frag)).chain(outro_iter)
-    }
-
-    pub fn len(&self) -> usize {
-        self.len
     }
 }
 

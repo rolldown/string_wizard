@@ -12,6 +12,10 @@ pub struct Joiner<'s> {
 
 impl<'s> Joiner<'s> {
     // --- public
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn with_options(options: JoinerOptions) -> Self {
         Self {
             separator: options.separator,
@@ -30,7 +34,7 @@ impl<'s> Joiner<'s> {
     }
 
     pub fn len(&self) -> usize {
-        self.sources.iter().map(|s| s.len()).sum()
+        self.fragments().map(|s| s.len()).sum()
     }
 
     pub fn join(&self) -> String {
@@ -47,7 +51,7 @@ impl<'s> Joiner<'s> {
         let mut iter = self
             .sources
             .iter()
-            .flat_map(|c| self.separator.as_ref().map(|s| s.as_str()).into_iter().chain(c.fragments()));
+            .flat_map(|c| self.separator.as_deref().into_iter().chain(c.fragments()));
         // Drop the first separator
         if self.separator.is_some() {
             iter.next();
