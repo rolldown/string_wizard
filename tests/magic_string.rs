@@ -36,6 +36,7 @@ mod prepend_append_left_right {
     fn preserves_intended_order() {
         let mut s = MagicString::new("0123456789");
         s.append_left(5, "A");
+        assert_eq!(s.to_string(), "01234A56789");
         s.prepend_right(5, "a");
         s.prepend_right(5, "b");
         s.append_left(5, "B");
@@ -60,8 +61,32 @@ mod prepend_append_left_right {
         s.prepend_right(5, "]");
         assert_eq!(s.to_string(), "01234{<ABC([])cba>}56789");
     }
+
+    #[test]
+    fn preserves_intended_order_at_beginning_of_string() {
+        let mut s = MagicString::new("x");
+        s.append_left(0, "1");
+        s.prepend_left(0, "2");
+        s.append_left(0, "3");
+        s.prepend_left(0, "4");
+
+        assert_eq!(s.to_string(), "4213x");
+    }
+
+    #[test]
+    fn preserves_intended_order_at_end_of_string() {
+        let mut s = MagicString::new("x");
+        s.append_right(1, "1");
+        s.prepend_right(1, "2");
+        s.append_right(1, "3");
+        s.prepend_right(1, "4");
+
+        assert_eq!(s.to_string(), "x4213");
+    }
+
+
 }
-mod prepend {
+mod misc {
     use super::*;
     
     #[test]
@@ -72,5 +97,13 @@ mod prepend {
         assert_eq!(s.to_string(), "xyzabcdefghijkl");
         s.prepend("xyz");
         assert_eq!(s.to_string(), "xyzxyzabcdefghijkl");
+    }
+
+    #[test]
+    fn remove() {
+        // should append content
+        let mut s = MagicString::new("0123456");
+        assert_eq!(s.remove(0, 3).to_string(), "3456");
+        assert_eq!(s.remove(4, 7).to_string(), "");
     }
 }

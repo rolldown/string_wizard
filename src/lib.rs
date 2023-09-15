@@ -22,3 +22,5 @@ type ChunkVec<'s> = IndexVec<ChunkIdx, Chunk<'s>>;
 index_vec::define_index_type! {
     struct SourceIdx = u32;
 }
+
+pub(crate) type TextSize = u32;

@@ -1,6 +1,8 @@
+use std::collections::VecDeque;
+
 use rustc_hash::FxHashMap;
 
-use crate::{chunk::Chunk, span::Span, ChunkIdx, ChunkVec, CowStr};
+use crate::{chunk::Chunk, span::Span, ChunkIdx, ChunkVec, CowStr, TextSize};
 
 #[derive(Debug, Default)]
 pub struct MagicStringOptions {
@@ -9,6 +11,8 @@ pub struct MagicStringOptions {
 
 pub struct MagicString<'s> {
     pub filename: Option<String>,
+    intro: VecDeque<CowStr<'s>>,
+    outro: VecDeque<CowStr<'s>>,
 
     source: CowStr<'s>,
     source_len: u32,
@@ -33,6 +37,8 @@ impl<'s> MagicString<'s> {
         let mut chunks = ChunkVec::with_capacity(1);
         let initial_chunk_idx = chunks.push(initial_chunk);
         let mut magic_string = Self {
+            intro: Default::default(),
+            outro: Default::default(),
             source,
             source_len,
             first_chunk_idx: initial_chunk_idx,
@@ -53,7 +59,7 @@ impl<'s> MagicString<'s> {
     }
 
     pub fn append(&mut self, source: impl Into<CowStr<'s>>) -> &mut Self {
-        self.last_chunk_mut().append_outro(source.into());
+        self.append_outro(source.into());
         self
     }
 
@@ -65,11 +71,13 @@ impl<'s> MagicString<'s> {
     /// s.append_left(2, "b");
     /// assert_eq!(s.to_string(), "01ab234")
     ///```
-    pub fn append_left(&mut self, text_index: u32, source: impl Into<CowStr<'s>>) -> &mut Self {
-        self.split_at(text_index);
-        let idx = self.chunk_by_end.get(&text_index).unwrap();
-        let chunk = &mut self.chunks[*idx];
-        chunk.append_outro(source.into());
+    pub fn append_left(&mut self, text_index: u32, content: impl Into<CowStr<'s>>) -> &mut Self {
+        match self.by_end_mut(text_index) {
+            Some(chunk) => {
+                chunk.append_outro(content.into());
+            }
+            None => self.append_intro(content.into()),
+        }
         self
     }
 
@@ -83,32 +91,44 @@ impl<'s> MagicString<'s> {
     /// s.append_left(2, "b");
     /// assert_eq!(s.to_string(), "01abAB234")
     ///```
-    pub fn append_right(&mut self, text_index: u32, source: impl Into<CowStr<'s>>) -> &mut Self {
-        self.split_at(text_index);
-        let idx = self.chunk_by_start.get(&text_index).unwrap();
-        let chunk = &mut self.chunks[*idx];
-        chunk.append_intro(source.into());
+    pub fn append_right(&mut self, text_index: u32, content: impl Into<CowStr<'s>>) -> &mut Self {
+        match self.by_start_mut(text_index) {
+            Some(chunk) => {
+                chunk.append_intro(content.into());
+            }
+            None => self.append_outro(content.into()),
+        }
         self
     }
 
     pub fn prepend(&mut self, source: impl Into<CowStr<'s>>) -> &mut Self {
-        self.first_chunk_mut().prepend_intro(source.into());
+        self.prepend_intro(source.into());
         self
     }
 
-    pub fn prepend_left(&mut self, text_index: u32, content: impl Into<CowStr<'s>>) -> &mut Self {
-        self.split_at(text_index);
-        let idx = self.chunk_by_end.get(&text_index).unwrap();
-        let chunk = &mut self.chunks[*idx];
-        chunk.prepend_outro(content.into());
+    pub fn prepend_left(
+        &mut self,
+        text_index: TextSize,
+        content: impl Into<CowStr<'s>>,
+    ) -> &mut Self {
+        match self.by_end_mut(text_index) {
+            Some(chunk) => chunk.prepend_outro(content.into()),
+            None => self.prepend_intro(content.into()),
+        }
         self
     }
 
-    pub fn prepend_right(&mut self, text_index: u32, content: impl Into<CowStr<'s>>) -> &mut Self {
-        self.split_at(text_index);
-        let idx = self.chunk_by_start.get(&text_index).unwrap();
-        let chunk = &mut self.chunks[*idx];
-        chunk.prepend_intro(content.into());
+    pub fn prepend_right(
+        &mut self,
+        text_index: TextSize,
+        content: impl Into<CowStr<'s>>,
+    ) -> &mut Self {
+        match self.by_start_mut(text_index) {
+            Some(chunk) => {
+                chunk.prepend_intro(content.into());
+            }
+            None => self.prepend_outro(content.into()),
+        }
         self
     }
 
@@ -123,7 +143,51 @@ impl<'s> MagicString<'s> {
         ret
     }
 
+    pub fn remove(&mut self, start: u32, end: u32) -> &mut Self {
+        if start == end {
+            return self;
+        }
+        
+        assert!(end <= self.source_len, "end is out of bounds");
+        assert!(start < end, "end must be greater than start");
+
+        self.split_at(start);
+        self.split_at(end);
+
+        let mut searched = self.chunk_by_start.get(&start).copied();
+
+        while let Some(chunk_idx) = searched {
+            let chunk = &mut self.chunks[chunk_idx];
+            chunk.intro.clear();
+            chunk.outro.clear();
+            chunk.edit("".into());
+            searched = if end == chunk.end() {
+                None
+            } else {
+                self.chunk_by_start.get(&chunk.end()).copied()
+            }
+        }
+
+        self
+    }
+
     // --- private
+
+    fn prepend_intro(&mut self, content: impl Into<CowStr<'s>>) {
+        self.intro.push_front(content.into());
+    }
+
+    fn append_outro(&mut self, content: impl Into<CowStr<'s>>) {
+        self.outro.push_back(content.into());
+    }
+
+    fn prepend_outro(&mut self, content: impl Into<CowStr<'s>>) {
+        self.outro.push_front(content.into());
+    }
+
+    fn append_intro(&mut self, content: impl Into<CowStr<'s>>) {
+        self.intro.push_back(content.into());
+    }
 
     fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         ChunkIter {
@@ -133,7 +197,10 @@ impl<'s> MagicString<'s> {
     }
 
     pub(crate) fn fragments(&'s self) -> impl Iterator<Item = &'s str> {
-        self.iter_chunks().flat_map(|c| c.fragments(&self.source))
+        let intro = self.intro.iter().map(|s| s.as_ref());
+        let outro = self.outro.iter().map(|s| s.as_ref());
+        let chunks = self.iter_chunks().flat_map(|c| c.fragments(&self.source));
+        intro.chain(chunks).chain(outro)
     }
 
     /// For input
@@ -146,16 +213,17 @@ impl<'s> MagicString<'s> {
     ///
     /// Chunk{span: (0, 3)} => "abc"
     /// Chunk{span: (3, 7)} => "defg"
-    fn split_at(&mut self, text_index: u32) {
-        debug_assert!(text_index <= self.source_len);
-
-        if self.chunk_by_start.contains_key(&text_index)
-            || self.chunk_by_end.contains_key(&text_index)
-        {
+    fn split_at(&mut self, text_index: TextSize) {
+        if text_index == 0 || self.chunk_by_end.contains_key(&text_index) {
             return;
         }
 
-        let mut target = &self.chunks[self.first_chunk_idx];
+        let mut target = if (self.source_len - text_index) > text_index {
+            self.first_chunk()
+        } else {
+            self.last_chunk()
+        };
+
         let mut target_idx = self.first_chunk_idx;
 
         let search_right = text_index > target.end();
@@ -186,12 +254,34 @@ impl<'s> MagicString<'s> {
         chunk_contains_index.next = Some(new_chunk_idx);
     }
 
-    fn last_chunk_mut(&mut self) -> &mut Chunk<'s> {
-        &mut self.chunks[self.last_chunk_idx]
+    fn by_start_mut(&mut self, text_index: TextSize) -> Option<&mut Chunk<'s>> {
+        if text_index == self.source_len {
+            None
+        } else {
+            self.split_at(text_index);
+            // TODO: safety: using `unwrap_unchecked` is fine.
+            let idx = self.chunk_by_start.get(&text_index).unwrap();
+            Some(&mut self.chunks[*idx])
+        }
     }
 
-    fn first_chunk_mut(&mut self) -> &mut Chunk<'s> {
-        &mut self.chunks[self.first_chunk_idx]
+    fn by_end_mut(&mut self, text_index: TextSize) -> Option<&mut Chunk<'s>> {
+        if text_index == 0 {
+            None
+        } else {
+            self.split_at(text_index);
+            // TODO: safety: using `unwrap_unchecked` is fine.
+            let idx = self.chunk_by_end.get(&text_index).unwrap();
+            Some(&mut self.chunks[*idx])
+        }
+    }
+
+    fn last_chunk(&self) -> &Chunk<'s> {
+        &self.chunks[self.last_chunk_idx]
+    }
+
+    fn first_chunk(&self) -> &Chunk<'s> {
+        &self.chunks[self.first_chunk_idx]
     }
 }
 

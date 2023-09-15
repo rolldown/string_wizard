@@ -1,12 +1,13 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, borrow::Cow};
 
 use crate::{span::Span, ChunkIdx, CowStr};
 
 #[derive(Debug, Default)]
 pub struct Chunk<'str> {
-    intro: VecDeque<CowStr<'str>>,
+    pub intro: VecDeque<CowStr<'str>>,
+    pub outro: VecDeque<CowStr<'str>>,
     span: Span,
-    outro: VecDeque<CowStr<'str>>,
+    content: Option<CowStr<'str>>,
     pub(crate) next: Option<ChunkIdx>,
 }
 
@@ -60,9 +61,17 @@ impl<'str> Chunk<'str> {
 
     pub fn fragments(&'str self, original_source: &'str CowStr<'str>) -> impl Iterator<Item = &'str str> {
         let intro_iter = self.intro.iter().map(|frag| frag.as_ref());
-        let source_frag = self.span.text(original_source.as_ref());
+        let source_frag = self.content.as_deref().unwrap_or_else(|| self.span.text(original_source.as_ref()));
         let outro_iter = self.outro.iter().map(|frag| frag.as_ref());
         intro_iter.chain(Some(source_frag)).chain(outro_iter)
+    }
+
+    pub fn edit(&mut self, content: CowStr<'str>) {
+        self.content = Some(content);
+    }
+
+    pub fn is_edited(&self) -> bool {
+        self.content.is_some()
     }
 }
 
