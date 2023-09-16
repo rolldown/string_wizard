@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, borrow::Cow};
+use std::{borrow::Cow, collections::VecDeque};
 
 use crate::{span::Span, ChunkIdx, CowStr};
 
@@ -49,19 +49,28 @@ impl<'str> Chunk<'str> {
         self.intro.push_front(content)
     }
 
-    pub fn split<'a,>(&'a mut self, text_index: u32)  -> Chunk<'str> {
+    pub fn split<'a>(&'a mut self, text_index: u32) -> Chunk<'str> {
         let first_slice_span = Span(self.start(), text_index);
         let last_slice_span = Span(text_index, self.end());
         let mut new_chunk = Chunk::new(last_slice_span);
+        if self.is_edited() {
+            new_chunk.edit("".into())
+        }
         std::mem::swap(&mut new_chunk.outro, &mut self.outro);
         self.span = first_slice_span;
         new_chunk.next = self.next;
         new_chunk
     }
 
-    pub fn fragments(&'str self, original_source: &'str CowStr<'str>) -> impl Iterator<Item = &'str str> {
+    pub fn fragments(
+        &'str self,
+        original_source: &'str CowStr<'str>,
+    ) -> impl Iterator<Item = &'str str> {
         let intro_iter = self.intro.iter().map(|frag| frag.as_ref());
-        let source_frag = self.content.as_deref().unwrap_or_else(|| self.span.text(original_source.as_ref()));
+        let source_frag = self
+            .content
+            .as_deref()
+            .unwrap_or_else(|| self.span.text(original_source.as_ref()));
         let outro_iter = self.outro.iter().map(|frag| frag.as_ref());
         intro_iter.chain(Some(source_frag)).chain(outro_iter)
     }
@@ -74,4 +83,3 @@ impl<'str> Chunk<'str> {
         self.content.is_some()
     }
 }
-
