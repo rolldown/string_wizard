@@ -3,6 +3,9 @@ mod chunk;
 mod span;
 mod joiner;
 mod magic_string;
+mod mappings;
+mod locator;
+
 use std::borrow::Cow;
 
 type CowStr<'s> = Cow<'s, str>;
@@ -23,4 +26,4 @@ index_vec::define_index_type! {
     struct SourceIdx = u32;
 }
 
-pub(crate) type TextSize = u32;
+pub(crate) type TextSize = usize;

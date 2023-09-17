@@ -2,7 +2,10 @@ use std::collections::VecDeque;
 
 use rustc_hash::FxHashMap;
 
-use crate::{chunk::Chunk, span::Span, ChunkIdx, ChunkVec, CowStr, TextSize};
+use crate::{
+    chunk::Chunk, locator::Locator, mappings::Mappings, span::Span, ChunkIdx, ChunkVec, CowStr,
+    TextSize,
+};
 
 #[derive(Debug, Default)]
 pub struct MagicStringOptions {
@@ -15,12 +18,11 @@ pub struct MagicString<'s> {
     outro: VecDeque<CowStr<'s>>,
 
     source: CowStr<'s>,
-    source_len: u32,
     chunks: ChunkVec<'s>,
     first_chunk_idx: ChunkIdx,
     last_chunk_idx: ChunkIdx,
-    chunk_by_start: FxHashMap<u32, ChunkIdx>,
-    chunk_by_end: FxHashMap<u32, ChunkIdx>,
+    chunk_by_start: FxHashMap<TextSize, ChunkIdx>,
+    chunk_by_end: FxHashMap<TextSize, ChunkIdx>,
 }
 
 impl<'s> MagicString<'s> {
@@ -32,15 +34,13 @@ impl<'s> MagicString<'s> {
 
     pub fn with_options(source: impl Into<CowStr<'s>>, options: MagicStringOptions) -> Self {
         let source = source.into();
-        let source_len: u32 = source.len().try_into().expect("source is too big");
-        let initial_chunk = Chunk::new(Span(0, source_len));
+        let initial_chunk = Chunk::new(Span(0, source.len()));
         let mut chunks = ChunkVec::with_capacity(1);
         let initial_chunk_idx = chunks.push(initial_chunk);
         let mut magic_string = Self {
             intro: Default::default(),
             outro: Default::default(),
             source,
-            source_len,
             first_chunk_idx: initial_chunk_idx,
             last_chunk_idx: initial_chunk_idx,
             chunks,
@@ -53,7 +53,7 @@ impl<'s> MagicString<'s> {
         magic_string.chunk_by_start.insert(0, initial_chunk_idx);
         magic_string
             .chunk_by_end
-            .insert(source_len, initial_chunk_idx);
+            .insert(magic_string.source.len(), initial_chunk_idx);
 
         magic_string
     }
@@ -71,7 +71,11 @@ impl<'s> MagicString<'s> {
     /// s.append_left(2, "b");
     /// assert_eq!(s.to_string(), "01ab234")
     ///```
-    pub fn append_left(&mut self, text_index: u32, content: impl Into<CowStr<'s>>) -> &mut Self {
+    pub fn append_left(
+        &mut self,
+        text_index: TextSize,
+        content: impl Into<CowStr<'s>>,
+    ) -> &mut Self {
         match self.by_end_mut(text_index) {
             Some(chunk) => {
                 chunk.append_outro(content.into());
@@ -91,7 +95,11 @@ impl<'s> MagicString<'s> {
     /// s.append_left(2, "b");
     /// assert_eq!(s.to_string(), "01abAB234")
     ///```
-    pub fn append_right(&mut self, text_index: u32, content: impl Into<CowStr<'s>>) -> &mut Self {
+    pub fn append_right(
+        &mut self,
+        text_index: TextSize,
+        content: impl Into<CowStr<'s>>,
+    ) -> &mut Self {
         match self.by_start_mut(text_index) {
             Some(chunk) => {
                 chunk.append_intro(content.into());
@@ -143,12 +151,12 @@ impl<'s> MagicString<'s> {
         ret
     }
 
-    pub fn remove(&mut self, start: u32, end: u32) -> &mut Self {
+    pub fn remove(&mut self, start: TextSize, end: TextSize) -> &mut Self {
         if start == end {
             return self;
         }
-        
-        assert!(end <= self.source_len, "end is out of bounds");
+
+        assert!(end <= self.source.len(), "end is out of bounds");
         assert!(start < end, "end must be greater than start");
 
         self.split_at(start);
@@ -169,6 +177,19 @@ impl<'s> MagicString<'s> {
         }
 
         self
+    }
+
+    pub fn generate_decoded_map(&self) {
+        let mut mappings = Mappings::default();
+        let locator = Locator::new(&self.source);
+
+        self.intro.iter().for_each(|frag| {
+            mappings.advance(frag);
+        });
+
+        self.iter_chunks().for_each(|chunk| {
+            let loc = locator.locate(chunk.start());
+        });
     }
 
     // --- private
@@ -218,7 +239,7 @@ impl<'s> MagicString<'s> {
             return;
         }
 
-        let mut target = if (self.source_len - text_index) > text_index {
+        let mut target = if (self.source.len() - text_index) > text_index {
             self.first_chunk()
         } else {
             self.last_chunk()
@@ -255,7 +276,7 @@ impl<'s> MagicString<'s> {
     }
 
     fn by_start_mut(&mut self, text_index: TextSize) -> Option<&mut Chunk<'s>> {
-        if text_index == self.source_len {
+        if text_index == self.source.len() {
             None
         } else {
             self.split_at(text_index);

@@ -1,20 +1,18 @@
+use crate::TextSize;
+
 #[derive(Debug, Default, Clone, Copy)]
-pub struct Span(pub u32, pub u32);
+pub struct Span(pub TextSize, pub TextSize);
 
 impl Span {
-    pub fn start(&self) -> u32 {
+    pub fn start(&self) -> TextSize {
         self.0
     }
 
-    pub fn end(&self) -> u32 {
+    pub fn end(&self) -> TextSize {
         self.1
     }
 
     pub fn text<'s>(&self, source: &'s str) -> &'s str {
-        &source[self.start() as usize..self.end() as usize]
+        &source[self.start()..self.end()]
     }
-
-    // pub fn size(&self) -> usize {
-    //     (self.1 - self.0) as usize
-    // }
 }

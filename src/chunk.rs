@@ -1,6 +1,6 @@
-use std::{borrow::Cow, collections::VecDeque};
+use std::collections::VecDeque;
 
-use crate::{span::Span, ChunkIdx, CowStr};
+use crate::{span::Span, ChunkIdx, CowStr, TextSize};
 
 #[derive(Debug, Default)]
 pub struct Chunk<'str> {
@@ -21,15 +21,15 @@ impl<'s> Chunk<'s> {
 }
 
 impl<'str> Chunk<'str> {
-    pub fn start(&self) -> u32 {
+    pub fn start(&self) -> TextSize {
         self.span.start()
     }
 
-    pub fn end(&self) -> u32 {
+    pub fn end(&self) -> TextSize {
         self.span.end()
     }
 
-    pub fn contains(&self, text_index: u32) -> bool {
+    pub fn contains(&self, text_index: TextSize) -> bool {
         self.start() < text_index && text_index < self.end()
     }
 
@@ -49,7 +49,7 @@ impl<'str> Chunk<'str> {
         self.intro.push_front(content)
     }
 
-    pub fn split<'a>(&'a mut self, text_index: u32) -> Chunk<'str> {
+    pub fn split<'a>(&'a mut self, text_index: TextSize) -> Chunk<'str> {
         let first_slice_span = Span(self.start(), text_index);
         let last_slice_span = Span(text_index, self.end());
         let mut new_chunk = Chunk::new(last_slice_span);
