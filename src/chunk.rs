@@ -6,13 +6,15 @@ use crate::{span::Span, ChunkIdx, CowStr, TextSize};
 pub struct Chunk<'str> {
     pub intro: VecDeque<CowStr<'str>>,
     pub outro: VecDeque<CowStr<'str>>,
-    span: Span,
-    content: Option<CowStr<'str>>,
+    pub span: Span,
+    pub edited_content: Option<CowStr<'str>>,
     pub(crate) next: Option<ChunkIdx>,
+    pub store_name: bool,
 }
 
 impl<'s> Chunk<'s> {
     pub fn new(span: Span) -> Self {
+        debug_assert!(span.0 < span.1);
         Self {
             span,
             ..Default::default()
@@ -50,11 +52,13 @@ impl<'str> Chunk<'str> {
     }
 
     pub fn split<'a>(&'a mut self, text_index: TextSize) -> Chunk<'str> {
+        debug_assert!(text_index > self.start());
+        debug_assert!(text_index < self.end());
         let first_slice_span = Span(self.start(), text_index);
         let last_slice_span = Span(text_index, self.end());
         let mut new_chunk = Chunk::new(last_slice_span);
         if self.is_edited() {
-            new_chunk.edit("".into())
+            new_chunk.edit("".into(), true, false);
         }
         std::mem::swap(&mut new_chunk.outro, &mut self.outro);
         self.span = first_slice_span;
@@ -68,18 +72,23 @@ impl<'str> Chunk<'str> {
     ) -> impl Iterator<Item = &'str str> {
         let intro_iter = self.intro.iter().map(|frag| frag.as_ref());
         let source_frag = self
-            .content
+            .edited_content
             .as_deref()
             .unwrap_or_else(|| self.span.text(original_source.as_ref()));
         let outro_iter = self.outro.iter().map(|frag| frag.as_ref());
         intro_iter.chain(Some(source_frag)).chain(outro_iter)
     }
 
-    pub fn edit(&mut self, content: CowStr<'str>) {
-        self.content = Some(content);
+    pub fn edit(&mut self, content: CowStr<'str>, overwrite: bool, store_name: bool) {
+        if overwrite {
+            self.intro.clear();
+            self.outro.clear();
+        }
+        self.store_name = store_name;
+        self.edited_content = Some(content);
     }
 
     pub fn is_edited(&self) -> bool {
-        self.content.is_some()
+        self.edited_content.is_some()
     }
 }

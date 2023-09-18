@@ -1,10 +1,11 @@
-
 mod chunk;
-mod span;
 mod joiner;
+mod locator;
 mod magic_string;
 mod mappings;
-mod locator;
+mod source_map;
+mod span;
+mod decoded_map;
 
 use std::borrow::Cow;
 
@@ -13,8 +14,12 @@ type CowStr<'s> = Cow<'s, str>;
 use chunk::Chunk;
 use index_vec::IndexVec;
 
-pub use crate::{magic_string::{MagicString, MagicStringOptions}, joiner::{Joiner, JoinerOptions}};
-
+pub use crate::{
+    joiner::{Joiner, JoinerOptions},
+    magic_string::{
+        mutation::UpdateOptions, source_map::SourceMapOptions, MagicString, MagicStringOptions,
+    },
+};
 
 index_vec::define_index_type! {
     struct ChunkIdx = u32;

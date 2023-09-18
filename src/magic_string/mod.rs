@@ -1,3 +1,6 @@
+pub mod mutation;
+pub mod source_map;
+
 use std::collections::VecDeque;
 
 use rustc_hash::FxHashMap;
@@ -17,6 +20,7 @@ pub struct MagicString<'s> {
     intro: VecDeque<CowStr<'s>>,
     outro: VecDeque<CowStr<'s>>,
 
+    stored_names: Vec<Span>,
     source: CowStr<'s>,
     chunks: ChunkVec<'s>,
     first_chunk_idx: ChunkIdx,
@@ -48,6 +52,7 @@ impl<'s> MagicString<'s> {
             chunk_by_end: Default::default(),
             // setup options
             filename: options.filename,
+            stored_names: Default::default(),
         };
 
         magic_string.chunk_by_start.insert(0, initial_chunk_idx);
@@ -168,7 +173,7 @@ impl<'s> MagicString<'s> {
             let chunk = &mut self.chunks[chunk_idx];
             chunk.intro.clear();
             chunk.outro.clear();
-            chunk.edit("".into());
+            chunk.edit("".into(), true, false);
             searched = if end == chunk.end() {
                 None
             } else {
@@ -177,19 +182,6 @@ impl<'s> MagicString<'s> {
         }
 
         self
-    }
-
-    pub fn generate_decoded_map(&self) {
-        let mut mappings = Mappings::default();
-        let locator = Locator::new(&self.source);
-
-        self.intro.iter().for_each(|frag| {
-            mappings.advance(frag);
-        });
-
-        self.iter_chunks().for_each(|chunk| {
-            let loc = locator.locate(chunk.start());
-        });
     }
 
     // --- private
@@ -239,15 +231,11 @@ impl<'s> MagicString<'s> {
             return;
         }
 
-        let mut target = if (self.source.len() - text_index) > text_index {
-            self.first_chunk()
+        let (mut target, mut target_idx, search_right) = if (self.source.len() - text_index) > text_index {
+            (self.first_chunk(), self.first_chunk_idx, true)
         } else {
-            self.last_chunk()
+            (self.last_chunk(), self.last_chunk_idx, false)
         };
-
-        let mut target_idx = self.first_chunk_idx;
-
-        let search_right = text_index > target.end();
 
         while !target.contains(text_index) {
             let next_idx = if search_right {
@@ -260,7 +248,6 @@ impl<'s> MagicString<'s> {
         }
 
         let chunk_contains_index = &mut self.chunks[target_idx];
-
         let new_chunk = chunk_contains_index.split(text_index);
         self.chunk_by_end.insert(text_index, target_idx);
         let new_chunk_end = new_chunk.end();

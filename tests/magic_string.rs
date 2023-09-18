@@ -104,6 +104,6 @@ mod misc {
         // should append content
         let mut s = MagicString::new("0123456");
         assert_eq!(s.remove(0, 3).to_string(), "3456");
-        assert_eq!(s.remove(4, 7).to_string(), "");
+        assert_eq!(s.remove(3, 7).to_string(), "");
     }
 }
