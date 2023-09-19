@@ -11,7 +11,7 @@ fn main() {
         store_name: true,
         ..Default::default()
     };
-    s
+    s   
         .update_with(
             1,
             2,

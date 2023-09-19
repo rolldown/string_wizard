@@ -113,9 +113,9 @@ impl Mappings {
                 vlq::encode(segment.source_index as i64, &mut encoded).unwrap();
                 vlq::encode(segment.original_line as i64, &mut encoded).unwrap();
                 vlq::encode(segment.original_column as i64, &mut encoded).unwrap();
-                // if let Some(name_index) = segment.name_index {
-                //     vlq::encode(name_index as i64, &mut encoded).unwrap();
-                // }
+                if let Some(name_index) = segment.name_index {
+                    vlq::encode(name_index as i64, &mut encoded).unwrap();
+                }
                 encoded_mappings.push_str(&String::from_utf8(encoded).unwrap());
                 if segment_idx != line.len() - 1 {
                     encoded_mappings.push(',');

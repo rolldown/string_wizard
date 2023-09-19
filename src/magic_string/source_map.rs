@@ -63,7 +63,6 @@ impl<'s> MagicString<'s> {
 
     pub fn source_map(&self, opts: SourceMapOptions) -> SourceMap {
         let decoded_map = self.generate_decoded_source_map(opts);
-        println!("decoded_map {decoded_map:#?}");
         decoded_map.into_source_map()
     }
 }
