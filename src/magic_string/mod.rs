@@ -156,33 +156,7 @@ impl<'s> MagicString<'s> {
         ret
     }
 
-    pub fn remove(&mut self, start: TextSize, end: TextSize) -> &mut Self {
-        if start == end {
-            return self;
-        }
-
-        assert!(end <= self.source.len(), "end is out of bounds");
-        assert!(start < end, "end must be greater than start");
-
-        self.split_at(start);
-        self.split_at(end);
-
-        let mut searched = self.chunk_by_start.get(&start).copied();
-
-        while let Some(chunk_idx) = searched {
-            let chunk = &mut self.chunks[chunk_idx];
-            chunk.intro.clear();
-            chunk.outro.clear();
-            chunk.edit("".into(), true, false);
-            searched = if end == chunk.end() {
-                None
-            } else {
-                self.chunk_by_start.get(&chunk.end()).copied()
-            }
-        }
-
-        self
-    }
+   
 
     // --- private
 

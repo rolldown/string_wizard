@@ -2,6 +2,22 @@ use std::collections::VecDeque;
 
 use crate::{span::Span, ChunkIdx, CowStr, TextSize};
 
+#[derive(Debug)]
+pub struct EditOptions {
+    /// `true` will clear the `intro` and `outro` of the [Chunk]
+    pub overwrite: bool,
+    pub store_name: bool,
+}
+
+impl Default for EditOptions {
+    fn default() -> Self {
+        Self {
+            overwrite: true,
+            store_name: false,
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Chunk<'str> {
     pub intro: VecDeque<CowStr<'str>>,
@@ -58,7 +74,7 @@ impl<'str> Chunk<'str> {
         let last_slice_span = Span(text_index, self.end());
         let mut new_chunk = Chunk::new(last_slice_span);
         if self.is_edited() {
-            new_chunk.edit("".into(), true, false);
+            new_chunk.edit("".into(), Default::default());
         }
         std::mem::swap(&mut new_chunk.outro, &mut self.outro);
         self.span = first_slice_span;
@@ -79,12 +95,12 @@ impl<'str> Chunk<'str> {
         intro_iter.chain(Some(source_frag)).chain(outro_iter)
     }
 
-    pub fn edit(&mut self, content: CowStr<'str>, overwrite: bool, store_name: bool) {
-        if overwrite {
+    pub fn edit(&mut self, content: CowStr<'str>, opts: EditOptions) {
+        if opts.overwrite {
             self.intro.clear();
             self.outro.clear();
         }
-        self.store_name = store_name;
+        self.store_name = opts.store_name;
         self.edited_content = Some(content);
     }
 
