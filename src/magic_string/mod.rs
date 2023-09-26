@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    chunk::Chunk, locator::Locator, mappings::Mappings, span::Span, ChunkIdx, ChunkVec, CowStr,
+    chunk::{Chunk, ChunkVec, ChunkIdx}, locator::Locator, mappings::Mappings, span::Span, CowStr,
     TextSize,
 };
 

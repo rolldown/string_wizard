@@ -1,6 +1,14 @@
 use std::collections::VecDeque;
 
-use crate::{span::Span, ChunkIdx, CowStr, TextSize};
+use index_vec::IndexVec;
+
+use crate::{span::Span, CowStr, TextSize};
+
+index_vec::define_index_type! {
+    pub struct ChunkIdx = u32;
+}
+
+pub type ChunkVec<'s> = IndexVec<ChunkIdx, Chunk<'s>>;
 
 #[derive(Debug)]
 pub struct EditOptions {
