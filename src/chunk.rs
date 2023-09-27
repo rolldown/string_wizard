@@ -26,7 +26,7 @@ impl Default for EditOptions {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Chunk<'str> {
     pub intro: VecDeque<CowStr<'str>>,
     pub outro: VecDeque<CowStr<'str>>,
@@ -78,6 +78,9 @@ impl<'str> Chunk<'str> {
     pub fn split<'a>(&'a mut self, text_index: TextSize) -> Chunk<'str> {
         debug_assert!(text_index > self.start());
         debug_assert!(text_index < self.end());
+        if self.edited_content.is_some() {
+            panic!("Cannot split a chunk that has already been edited")
+        }
         let first_slice_span = Span(self.start(), text_index);
         let last_slice_span = Span(text_index, self.end());
         let mut new_chunk = Chunk::new(last_slice_span);

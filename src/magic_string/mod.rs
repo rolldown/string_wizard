@@ -15,6 +15,7 @@ pub struct MagicStringOptions {
     pub filename: Option<String>,
 }
 
+#[derive(Debug, Clone)]
 pub struct MagicString<'s> {
     pub filename: Option<String>,
     intro: VecDeque<CowStr<'s>>,

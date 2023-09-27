@@ -1,6 +1,37 @@
-use string_wizard::MagicString;
+use std::borrow::Cow;
 
+use string_wizard::MagicString;
 use string_wizard::MagicStringOptions;
+use string_wizard::UpdateOptions;
+
+trait MagicStringExt<'text> {
+    fn overwrite(
+        &mut self,
+        start: usize,
+        end: usize,
+        content: impl Into<Cow<'text, str>>,
+    ) -> &mut Self;
+}
+
+impl<'text> MagicStringExt<'text> for MagicString<'text> {
+    fn overwrite(
+        &mut self,
+        start: usize,
+        end: usize,
+        content: impl Into<Cow<'text, str>>,
+    ) -> &mut Self {
+        self.update_with(
+            start,
+            end,
+            content,
+            UpdateOptions {
+                overwrite: true,
+                ..Default::default()
+            },
+        )
+    }
+}
+
 mod options {
     use super::*;
     #[test]
@@ -17,7 +48,7 @@ mod options {
 
 mod append {
     use super::*;
-    
+
     #[test]
     fn should_append_content() {
         // should append content
@@ -44,7 +75,7 @@ mod prepend_append_left_right {
         s.prepend_right(5, "c");
 
         assert_eq!(s.to_string(), "01234ABCcba56789");
-        
+
         s.prepend_left(5, "<");
         s.prepend_left(5, "{");
         assert_eq!(s.to_string(), "01234{<ABCcba56789");
@@ -83,12 +114,45 @@ mod prepend_append_left_right {
 
         assert_eq!(s.to_string(), "x4213");
     }
-
-
 }
+
+mod clone {
+    use super::*;
+
+    #[test]
+    fn should_clone_a_magic_string() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.overwrite(3, 9, "XYZ");
+        let c = s.clone();
+
+        assert_eq!(c.to_string(), "abcXYZjkl")
+    }
+}
+
+mod overwrite {
+    use super::*;
+
+    #[test]
+    fn should_replace_characters() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.overwrite(5, 8, "FGH");
+        assert_eq!(s.to_string(), "abcdeFGHijkl");
+    }
+
+    // #[test]
+    // fn should_throw_an_error_if_overlapping_replacements_are_attempted() {
+    //     let mut s = MagicString::new("abcdefghijkl");
+    //     s.overwrite(7, 11, "xx");
+    //     assert!(std::panic::catch_unwind(|| {
+    //         s.clone().overwrite(8, 12, "yy");
+    //     })
+    //     .is_err())
+    // }
+}
+
 mod misc {
     use super::*;
-    
+
     #[test]
     fn should_append_content() {
         // should append content

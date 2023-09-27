@@ -3,25 +3,20 @@ use crate::{chunk::EditOptions, CowStr, MagicString, TextSize};
 #[derive(Debug, Default, Clone)]
 pub struct UpdateOptions {
     pub store_name: bool,
+
+    /// `true` will clear the `intro` and `outro` for the corresponding range.
     pub overwrite: bool,
 }
 
 impl<'text> MagicString<'text> {
+    /// A shorthand for `update_with(start, end, content, Default::default())`;
     pub fn update(
         &mut self,
         start: TextSize,
         end: TextSize,
         content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
-        self.update_with(
-            start,
-            end,
-            content,
-            UpdateOptions {
-                store_name: false,
-                overwrite: true,
-            },
-        )
+        self.update_with(start, end, content, Default::default())
     }
 
     pub fn update_with(
