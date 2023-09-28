@@ -54,17 +54,6 @@ impl Mappings {
             let chunk_content = chunk.span.text(source);
             let mut new_line = true;
             for char in chunk_content.chars() {
-                if new_line {
-                    new_line = false;
-                    let segment = Segment {
-                        dst_column: self.generated_code_column.into(),
-                        source_index: source_index.into(),
-                        src_line: loc.line.into(),
-                        src_column: loc.column.into(),
-                        name_index: None,
-                    };
-                    self.add_segment_to_current_line(segment);
-                }
                 match char {
                     '\n' => {
                         loc.bump_line();
@@ -72,6 +61,18 @@ impl Mappings {
                         new_line = true;
                     }
                     _ => {
+                        if new_line {
+                            new_line = false;
+                            let segment = Segment {
+                                dst_column: self.generated_code_column.into(),
+                                source_index: source_index.into(),
+                                src_line: loc.line.into(),
+                                src_column: loc.column.into(),
+                                name_index: None,
+                            };
+                            self.add_segment_to_current_line(segment);
+                        }
+
                         let char_utf16_len = char.len_utf16() as u32;
                         loc.column += char_utf16_len;
                         self.generated_code_column += char_utf16_len;
@@ -85,9 +86,11 @@ impl Mappings {
         if content.is_empty() {
             return;
         }
-        let mut lines = content.lines();
-        // SAFETY: The content at least has one line after checking of `content.is_empty()` .
-        // `"\n".lines().collect::<Vec<_>>()` would create `[""]`.
+        let mut lines = content.split('\n');
+        
+        // SAFETY: In any cases, lines would have at least one element.
+        // "".split('\n') would create `[""]`.
+        // "\n".split('\n') would create `["", ""]`.
         let last_line = unsafe { lines.next_back().unwrap_unchecked() };
         for _ in lines {
             self.bump_line();

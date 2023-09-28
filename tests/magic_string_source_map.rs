@@ -10,11 +10,28 @@ fn basic() {
     };
     s.update_with(1, 2, "v", update_options.clone())
         .update_with(3, 4, "d", update_options.clone())
-        .update_with(input.len() - 4, input.len() - 1, "h1", update_options.clone());
+        .update_with(
+            input.len() - 4,
+            input.len() - 1,
+            "h1",
+            update_options.clone(),
+        );
 
     let sm = s.source_map(SourceMapOptions {
         include_content: true,
     });
 
-    assert_eq!(sm.mappings, "AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG")
+    assert_eq!(
+        sm.mappings,
+        "AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG"
+    );
+
+    s.prepend("import React from 'react';\n");
+    let sm = s.source_map(SourceMapOptions {
+        include_content: true,
+    });
+    assert_eq!(
+        sm.mappings,
+        ";AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG"
+    );
 }
