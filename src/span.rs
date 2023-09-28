@@ -13,6 +13,8 @@ impl Span {
     }
 
     pub fn text<'s>(&self, source: &'s str) -> &'s str {
-        &source[self.start()..self.end()]
+        // This crate doesn't support usize which is u16 on 16-bit platforms.
+        // So, we can safely cast TextSize/u32 to usize.
+        &source[self.start() as usize..self.end() as usize]
     }
 }

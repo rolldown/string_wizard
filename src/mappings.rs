@@ -1,20 +1,22 @@
-use crate::{chunk::Chunk, locator::Locator};
-
+use crate::{chunk::Chunk, locator::Locator, TextSize};
 #[derive(Debug)]
 
 pub struct Segment {
     // column in the generated code
-    pub column: usize,
-    pub source_index: usize,
-    pub original_line: usize,
-    pub original_column: usize,
-    pub name_index: Option<usize>,
+    /// `dst_column` is calculated based on utf-16.
+    pub dst_column: i64,
+    pub source_index: i64,
+    pub src_line: i64,
+    /// `src_column` is calculated based on utf-16.
+    pub src_column: i64,
+    pub name_index: Option<i64>,
 }
 
 #[derive(Debug)]
 pub struct Mappings {
-    generated_code_line: usize,
-    generated_code_column: usize,
+    generated_code_line: TextSize,
+    /// `generated_code_column` is calculated based on utf-16.
+    generated_code_column: TextSize,
     raw: Vec<Vec<Segment>>,
 }
 
@@ -31,19 +33,19 @@ impl Mappings {
         &mut self,
         chunk: &Chunk,
         locator: &Locator,
-        source_index: usize,
+        source_index: TextSize,
         source: &str,
-        name_index: Option<usize>,
+        name_index: Option<TextSize>,
     ) {
         let mut loc = locator.locate(chunk.start());
         if let Some(edited_content) = &chunk.edited_content {
             if !edited_content.is_empty() {
                 let segment = Segment {
-                    column: self.generated_code_column,
-                    source_index,
-                    original_line: loc.line,
-                    original_column: loc.column,
-                    name_index,
+                    dst_column: self.generated_code_column.into(),
+                    source_index: source_index.into(),
+                    src_line: loc.line.into(),
+                    src_column: loc.column.into(),
+                    name_index: name_index.map(|n| n.into()),
                 };
                 self.add_segment_to_current_line(segment);
             }
@@ -55,10 +57,10 @@ impl Mappings {
                 if new_line {
                     new_line = false;
                     let segment = Segment {
-                        column: self.generated_code_column,
-                        source_index,
-                        original_line: loc.line,
-                        original_column: loc.column,
+                        dst_column: self.generated_code_column.into(),
+                        source_index: source_index.into(),
+                        src_line: loc.line.into(),
+                        src_column: loc.column.into(),
                         name_index: None,
                     };
                     self.add_segment_to_current_line(segment);
@@ -70,9 +72,9 @@ impl Mappings {
                         new_line = true;
                     }
                     _ => {
-                        let char_len = char.len_utf8();
-                        loc.column += char_len;
-                        self.generated_code_column += char.len_utf8();
+                        let char_utf16_len = char.len_utf16() as u32;
+                        loc.column += char_utf16_len;
+                        self.generated_code_column += char_utf16_len;
                     }
                 }
             }
@@ -90,33 +92,59 @@ impl Mappings {
         for _ in lines {
             self.bump_line();
         }
-        self.generated_code_column += last_line.len();
+        self.generated_code_column += last_line.chars().map(|c| c.len_utf16() as u32).sum::<u32>();
     }
 
     fn add_segment_to_current_line(&mut self, seg: Segment) {
-        self.raw[self.generated_code_line].push(seg)
+        self.raw[self.generated_code_line as usize].push(seg)
     }
 
     fn bump_line(&mut self) {
         self.generated_code_line += 1;
         self.generated_code_column = 0;
         self.raw.push(Default::default());
-        debug_assert!(self.generated_code_line == self.raw.len() - 1)
+        debug_assert!(self.generated_code_line as usize == self.raw.len() - 1)
     }
 
     pub fn encoded(&self) -> String {
         let mut encoded_mappings = String::new();
+        let mut last_segment = Segment {
+            dst_column: 0,
+            source_index: 0,
+            src_line: 0,
+            src_column: 0,
+            name_index: None,
+        };
         for (line_idx, line) in self.raw.iter().enumerate() {
+            last_segment.dst_column = 0;
             for (segment_idx, segment) in line.iter().enumerate() {
-                let mut encoded = vec![];
-                vlq::encode(segment.column as i64, &mut encoded).unwrap();
-                vlq::encode(segment.source_index as i64, &mut encoded).unwrap();
-                vlq::encode(segment.original_line as i64, &mut encoded).unwrap();
-                vlq::encode(segment.original_column as i64, &mut encoded).unwrap();
+                encode_vlq(
+                    segment.dst_column - last_segment.dst_column,
+                    &mut encoded_mappings,
+                );
+                encode_vlq(
+                    segment.source_index - last_segment.source_index,
+                    &mut encoded_mappings,
+                );
+                encode_vlq(
+                    segment.src_line - last_segment.src_line,
+                    &mut encoded_mappings,
+                );
+                encode_vlq(
+                    segment.src_column - last_segment.src_column,
+                    &mut encoded_mappings,
+                );
+                last_segment.dst_column = segment.dst_column;
+                last_segment.source_index = segment.source_index;
+                last_segment.src_line = segment.src_line;
+                last_segment.src_column = segment.src_column;
                 if let Some(name_index) = segment.name_index {
-                    vlq::encode(name_index as i64, &mut encoded).unwrap();
+                    encode_vlq(
+                        name_index - last_segment.name_index.unwrap_or_default(),
+                        &mut encoded_mappings,
+                    );
+                    last_segment.name_index = segment.name_index;
                 }
-                encoded_mappings.push_str(&String::from_utf8(encoded).unwrap());
                 if segment_idx != line.len() - 1 {
                     encoded_mappings.push(',');
                 }
@@ -129,3 +157,21 @@ impl Mappings {
         encoded_mappings
     }
 }
+
+pub(crate) fn encode_vlq(num: i64, out: &mut String) {
+    let mut num = if num < 0 { ((-num) << 1) + 1 } else { num << 1 };
+
+    loop {
+        let mut digit = num & 0b11111;
+        num >>= 5;
+        if num > 0 {
+            digit |= 1 << 5;
+        }
+        out.push(B64_CHARS[digit as usize] as char);
+        if num == 0 {
+            break;
+        }
+    }
+}
+
+const B64_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

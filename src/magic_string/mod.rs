@@ -6,8 +6,9 @@ use std::collections::VecDeque;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    chunk::{Chunk, ChunkVec, ChunkIdx}, locator::Locator, mappings::Mappings, span::Span, CowStr,
-    TextSize,
+    chunk::{Chunk, ChunkIdx, ChunkVec},
+    span::Span,
+    CowStr, TextSize,
 };
 
 #[derive(Debug, Default)]
@@ -157,8 +158,6 @@ impl<'s> MagicString<'s> {
         ret
     }
 
-   
-
     // --- private
 
     fn prepend_intro(&mut self, content: impl Into<CowStr<'s>>) {
@@ -201,16 +200,17 @@ impl<'s> MagicString<'s> {
     ///
     /// Chunk{span: (0, 3)} => "abc"
     /// Chunk{span: (3, 7)} => "defg"
-    fn split_at(&mut self, text_index: TextSize) {
+    fn split_at(&mut self, text_index: u32) {
         if text_index == 0 || self.chunk_by_end.contains_key(&text_index) {
             return;
         }
 
-        let (mut target, mut target_idx, search_right) = if (self.source.len() - text_index) > text_index {
-            (self.first_chunk(), self.first_chunk_idx, true)
-        } else {
-            (self.last_chunk(), self.last_chunk_idx, false)
-        };
+        let (mut target, mut target_idx, search_right) =
+            if (self.source.len() - text_index) > text_index {
+                (self.first_chunk(), self.first_chunk_idx, true)
+            } else {
+                (self.last_chunk(), self.last_chunk_idx, false)
+            };
 
         while !target.contains(text_index) {
             let next_idx = if search_right {

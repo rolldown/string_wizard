@@ -6,10 +6,13 @@ mod magic_string;
 mod mappings;
 mod source_map;
 mod span;
+mod basic_types;
 
-type CowStr<'text> = std::borrow::Cow<'text, str>;
+type CowStr<'text> = BasicCowStr<'text>;
 
-pub(crate) type TextSize = usize;
+pub(crate) type TextSize = u32;
+
+use basic_types::BasicCowStr;
 
 pub use crate::{
     joiner::{Joiner, JoinerOptions},

@@ -37,7 +37,7 @@ impl<'s> MagicString<'s> {
                         next_idx
                     });
                 debug_assert!(idx < names.len());
-                Some(idx)
+                Some(idx as u32)
             } else {
                 None
             };
@@ -54,7 +54,7 @@ impl<'s> MagicString<'s> {
             sources: vec!["".to_string()],
             sources_content: opts
                 .include_content
-                .then(|| vec![self.source.clone().into_owned()])
+                .then(|| vec![self.source.as_str().to_string()])
                 .unwrap_or_default(),
             mappings,
             names,

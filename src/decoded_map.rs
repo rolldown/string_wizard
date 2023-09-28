@@ -1,7 +1,4 @@
-use crate::{
-    mappings::{Mappings, Segment},
-    source_map::SourceMap,
-};
+use crate::{mappings::Mappings, source_map::SourceMap};
 
 #[derive(Debug)]
 pub struct DecodedMap {

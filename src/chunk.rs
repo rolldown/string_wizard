@@ -100,8 +100,9 @@ impl<'str> Chunk<'str> {
         let intro_iter = self.intro.iter().map(|frag| frag.as_ref());
         let source_frag = self
             .edited_content
-            .as_deref()
-            .unwrap_or_else(|| self.span.text(original_source.as_ref()));
+            .as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or_else(|| self.span.text(original_source.as_str()));
         let outro_iter = self.outro.iter().map(|frag| frag.as_ref());
         intro_iter.chain(Some(source_frag)).chain(outro_iter)
     }

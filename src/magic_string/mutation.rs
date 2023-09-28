@@ -1,4 +1,4 @@
-use crate::{chunk::EditOptions, CowStr, MagicString, TextSize};
+use crate::{chunk::EditOptions, CowStr, MagicString};
 
 #[derive(Debug, Default, Clone)]
 pub struct UpdateOptions {
@@ -12,8 +12,8 @@ impl<'text> MagicString<'text> {
     /// A shorthand for `update_with(start, end, content, Default::default())`;
     pub fn update(
         &mut self,
-        start: TextSize,
-        end: TextSize,
+        start: usize,
+        end: usize,
         content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
         self.update_with(start, end, content, Default::default())
@@ -21,8 +21,8 @@ impl<'text> MagicString<'text> {
 
     pub fn update_with(
         &mut self,
-        start: TextSize,
-        end: TextSize,
+        start: usize,
+        end: usize,
         content: impl Into<CowStr<'text>>,
         opts: UpdateOptions,
     ) -> &mut Self {
@@ -30,7 +30,7 @@ impl<'text> MagicString<'text> {
         self
     }
 
-    pub fn remove(&mut self, start: TextSize, end: TextSize) -> &mut Self {
+    pub fn remove(&mut self, start: usize, end: usize) -> &mut Self {
         self.update_with_inner(
             start,
             end,
@@ -49,12 +49,14 @@ impl<'text> MagicString<'text> {
 
     fn update_with_inner(
         &mut self,
-        start: TextSize,
-        end: TextSize,
+        start: usize,
+        end: usize,
         content: CowStr<'text>,
         opts: UpdateOptions,
         panic_if_start_equal_end: bool,
     ) -> &mut Self {
+        let start = start as u32;
+        let end = end as u32;
         if panic_if_start_equal_end && start == end {
             panic!(
                 "Cannot overwrite a zero-length range – use append_left or prepend_right instead"
