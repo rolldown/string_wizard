@@ -1,5 +1,8 @@
 {
     "cSpell.words": [
         "outro"
+    ],
+    "rust-analyzer.cargo.features": [
+        "source_map"
     ]
 }

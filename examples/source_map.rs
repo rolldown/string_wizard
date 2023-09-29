@@ -5,7 +5,7 @@ fn main() {
     let mut s = MagicString::new(demo);
 
     let update_options = UpdateOptions {
-        store_name: true,
+        keep_original: true,
         ..Default::default()
     };
     s.prepend("import React from 'react';\n")

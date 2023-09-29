@@ -1,5 +1,6 @@
 use crate::{
-    decoded_map::DecodedMap, locator::Locator, mappings::Mappings, source_map::SourceMap,
+    locator::Locator,
+    source_map::{decoded_map::DecodedMap, mappings::Mappings, SourceMap},
     MagicString,
 };
 

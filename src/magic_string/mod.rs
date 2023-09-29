@@ -1,4 +1,5 @@
 pub mod mutation;
+#[cfg(feature = "source_map")]
 pub mod source_map;
 
 use std::collections::VecDeque;
@@ -22,7 +23,6 @@ pub struct MagicString<'s> {
     intro: VecDeque<CowStr<'s>>,
     outro: VecDeque<CowStr<'s>>,
 
-    stored_names: Vec<Span>,
     source: CowStr<'s>,
     chunks: ChunkVec<'s>,
     first_chunk_idx: ChunkIdx,
@@ -54,7 +54,6 @@ impl<'s> MagicString<'s> {
             chunk_by_end: Default::default(),
             // setup options
             filename: options.filename,
-            stored_names: Default::default(),
         };
 
         magic_string.chunk_by_start.insert(0, initial_chunk_idx);

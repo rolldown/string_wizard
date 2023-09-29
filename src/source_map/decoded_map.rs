@@ -1,4 +1,6 @@
-use crate::{mappings::Mappings, source_map::SourceMap};
+use crate::source_map::SourceMap;
+
+use super::mappings::Mappings;
 
 #[derive(Debug)]
 pub struct DecodedMap {

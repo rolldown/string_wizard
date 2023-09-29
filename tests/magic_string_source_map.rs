@@ -5,7 +5,7 @@ fn basic() {
     let input = "<div>\n  hello, world\n</div>";
     let mut s = MagicString::new(input);
     let update_options = UpdateOptions {
-        store_name: true,
+        keep_original: true,
         ..Default::default()
     };
     s.update_with(1, 2, "v", update_options.clone())

@@ -2,7 +2,8 @@ use crate::{chunk::EditOptions, CowStr, MagicString};
 
 #[derive(Debug, Default, Clone)]
 pub struct UpdateOptions {
-    pub store_name: bool,
+    /// `true` will store the original content in the `name` field of the generated sourcemap.
+    pub keep_original: bool,
 
     /// `true` will clear the `intro` and `outro` for the corresponding range.
     pub overwrite: bool,
@@ -36,7 +37,7 @@ impl<'text> MagicString<'text> {
             end,
             "".into(),
             UpdateOptions {
-                store_name: false,
+                keep_original: false,
                 overwrite: true,
             },
             false,
@@ -74,7 +75,7 @@ impl<'text> MagicString<'text> {
             content.into(),
             EditOptions {
                 overwrite: opts.overwrite,
-                store_name: opts.store_name,
+                store_name: opts.keep_original,
             },
         );
 
