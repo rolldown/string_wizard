@@ -7,6 +7,7 @@ use std::collections::VecDeque;
 use rustc_hash::FxHashMap;
 
 use crate::{
+    basic_types::AssertIntoU32,
     chunk::{Chunk, ChunkIdx, ChunkVec},
     span::Span,
     CowStr, TextSize,
@@ -31,14 +32,14 @@ pub struct MagicString<'s> {
     chunk_by_end: FxHashMap<TextSize, ChunkIdx>,
 }
 
-impl<'s> MagicString<'s> {
+impl<'text> MagicString<'text> {
     // --- public
 
-    pub fn new(source: impl Into<CowStr<'s>>) -> Self {
+    pub fn new(source: impl Into<CowStr<'text>>) -> Self {
         Self::with_options(source, Default::default())
     }
 
-    pub fn with_options(source: impl Into<CowStr<'s>>, options: MagicStringOptions) -> Self {
+    pub fn with_options(source: impl Into<CowStr<'text>>, options: MagicStringOptions) -> Self {
         let source = source.into();
         let initial_chunk = Chunk::new(Span(0, source.len()));
         let mut chunks = ChunkVec::with_capacity(1);
@@ -64,7 +65,7 @@ impl<'s> MagicString<'s> {
         magic_string
     }
 
-    pub fn append(&mut self, source: impl Into<CowStr<'s>>) -> &mut Self {
+    pub fn append(&mut self, source: impl Into<CowStr<'text>>) -> &mut Self {
         self.append_outro(source.into());
         self
     }
@@ -79,10 +80,10 @@ impl<'s> MagicString<'s> {
     ///```
     pub fn append_left(
         &mut self,
-        text_index: TextSize,
-        content: impl Into<CowStr<'s>>,
+        text_index: impl AssertIntoU32,
+        content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
-        match self.by_end_mut(text_index) {
+        match self.by_end_mut(text_index.assert_into_u32()) {
             Some(chunk) => {
                 chunk.append_outro(content.into());
             }
@@ -103,10 +104,10 @@ impl<'s> MagicString<'s> {
     ///```
     pub fn append_right(
         &mut self,
-        text_index: TextSize,
-        content: impl Into<CowStr<'s>>,
+        text_index: impl AssertIntoU32,
+        content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
-        match self.by_start_mut(text_index) {
+        match self.by_start_mut(text_index.assert_into_u32()) {
             Some(chunk) => {
                 chunk.append_intro(content.into());
             }
@@ -115,17 +116,17 @@ impl<'s> MagicString<'s> {
         self
     }
 
-    pub fn prepend(&mut self, source: impl Into<CowStr<'s>>) -> &mut Self {
+    pub fn prepend(&mut self, source: impl Into<CowStr<'text>>) -> &mut Self {
         self.prepend_intro(source.into());
         self
     }
 
     pub fn prepend_left(
         &mut self,
-        text_index: TextSize,
-        content: impl Into<CowStr<'s>>,
+        text_index: impl AssertIntoU32,
+        content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
-        match self.by_end_mut(text_index) {
+        match self.by_end_mut(text_index.assert_into_u32()) {
             Some(chunk) => chunk.prepend_outro(content.into()),
             None => self.prepend_intro(content.into()),
         }
@@ -134,10 +135,10 @@ impl<'s> MagicString<'s> {
 
     pub fn prepend_right(
         &mut self,
-        text_index: TextSize,
-        content: impl Into<CowStr<'s>>,
+        text_index: impl AssertIntoU32,
+        content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
-        match self.by_start_mut(text_index) {
+        match self.by_start_mut(text_index.assert_into_u32()) {
             Some(chunk) => {
                 chunk.prepend_intro(content.into());
             }
@@ -159,19 +160,19 @@ impl<'s> MagicString<'s> {
 
     // --- private
 
-    fn prepend_intro(&mut self, content: impl Into<CowStr<'s>>) {
+    fn prepend_intro(&mut self, content: impl Into<CowStr<'text>>) {
         self.intro.push_front(content.into());
     }
 
-    fn append_outro(&mut self, content: impl Into<CowStr<'s>>) {
+    fn append_outro(&mut self, content: impl Into<CowStr<'text>>) {
         self.outro.push_back(content.into());
     }
 
-    fn prepend_outro(&mut self, content: impl Into<CowStr<'s>>) {
+    fn prepend_outro(&mut self, content: impl Into<CowStr<'text>>) {
         self.outro.push_front(content.into());
     }
 
-    fn append_intro(&mut self, content: impl Into<CowStr<'s>>) {
+    fn append_intro(&mut self, content: impl Into<CowStr<'text>>) {
         self.intro.push_back(content.into());
     }
 
@@ -182,7 +183,7 @@ impl<'s> MagicString<'s> {
         }
     }
 
-    pub(crate) fn fragments(&'s self) -> impl Iterator<Item = &'s str> {
+    pub(crate) fn fragments(&'text self) -> impl Iterator<Item = &'text str> {
         let intro = self.intro.iter().map(|s| s.as_ref());
         let outro = self.outro.iter().map(|s| s.as_ref());
         let chunks = self.iter_chunks().flat_map(|c| c.fragments(&self.source));
@@ -236,7 +237,8 @@ impl<'s> MagicString<'s> {
         chunk_contains_index.next = Some(new_chunk_idx);
     }
 
-    fn by_start_mut(&mut self, text_index: TextSize) -> Option<&mut Chunk<'s>> {
+    fn by_start_mut(&mut self, text_index: impl AssertIntoU32) -> Option<&mut Chunk<'text>> {
+        let text_index = text_index.assert_into_u32();
         if text_index == self.source.len() {
             None
         } else {
@@ -247,7 +249,8 @@ impl<'s> MagicString<'s> {
         }
     }
 
-    fn by_end_mut(&mut self, text_index: TextSize) -> Option<&mut Chunk<'s>> {
+    fn by_end_mut(&mut self, text_index: TextSize) -> Option<&mut Chunk<'text>> {
+        let text_index = text_index.assert_into_u32();
         if text_index == 0 {
             None
         } else {
@@ -258,11 +261,11 @@ impl<'s> MagicString<'s> {
         }
     }
 
-    fn last_chunk(&self) -> &Chunk<'s> {
+    fn last_chunk(&self) -> &Chunk<'text> {
         &self.chunks[self.last_chunk_idx]
     }
 
-    fn first_chunk(&self) -> &Chunk<'s> {
+    fn first_chunk(&self) -> &Chunk<'text> {
         &self.chunks[self.first_chunk_idx]
     }
 }

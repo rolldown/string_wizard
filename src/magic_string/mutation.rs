@@ -1,4 +1,4 @@
-use crate::{chunk::EditOptions, CowStr, MagicString};
+use crate::{basic_types::AssertIntoU32, chunk::EditOptions, CowStr, MagicString};
 
 #[derive(Debug, Default, Clone)]
 pub struct UpdateOptions {
@@ -13,8 +13,8 @@ impl<'text> MagicString<'text> {
     /// A shorthand for `update_with(start, end, content, Default::default())`;
     pub fn update(
         &mut self,
-        start: usize,
-        end: usize,
+        start: impl AssertIntoU32,
+        end: impl AssertIntoU32,
         content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
         self.update_with(start, end, content, Default::default())
@@ -22,19 +22,25 @@ impl<'text> MagicString<'text> {
 
     pub fn update_with(
         &mut self,
-        start: usize,
-        end: usize,
+        start: impl AssertIntoU32,
+        end: impl AssertIntoU32,
         content: impl Into<CowStr<'text>>,
         opts: UpdateOptions,
     ) -> &mut Self {
-        self.update_with_inner(start, end, content.into(), opts, true);
+        self.update_with_inner(
+            start.assert_into_u32(),
+            end.assert_into_u32(),
+            content.into(),
+            opts,
+            true,
+        );
         self
     }
 
-    pub fn remove(&mut self, start: usize, end: usize) -> &mut Self {
+    pub fn remove(&mut self, start: impl AssertIntoU32, end: impl AssertIntoU32) -> &mut Self {
         self.update_with_inner(
-            start,
-            end,
+            start.assert_into_u32(),
+            end.assert_into_u32(),
             "".into(),
             UpdateOptions {
                 keep_original: false,
@@ -50,8 +56,8 @@ impl<'text> MagicString<'text> {
 
     fn update_with_inner(
         &mut self,
-        start: usize,
-        end: usize,
+        start: u32,
+        end: u32,
         content: CowStr<'text>,
         opts: UpdateOptions,
         panic_if_start_equal_end: bool,

@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Debug};
 
 #[derive(Debug, Clone)]
 pub struct BasicCowStr<'text> {
@@ -36,5 +36,20 @@ impl<'text> std::ops::Deref for BasicCowStr<'text> {
 impl<'text, T: Into<Cow<'text, str>>> From<T> for BasicCowStr<'text> {
     fn from(value: T) -> Self {
         Self::new(value.into())
+    }
+}
+
+// This is basically doing the same thing as `TryInto<u32>`.
+// If we use `TryInto<u32>`, we need to put `where <T as TryInto<u32>>::Error: Debug` everywhere.
+pub trait AssertIntoU32 {
+    fn assert_into_u32(self) -> u32;
+}
+
+impl<T: TryInto<u32>> AssertIntoU32 for T
+where
+    <T as TryInto<u32>>::Error: Debug,
+{
+    fn assert_into_u32(self) -> u32 {
+        self.try_into().unwrap()
     }
 }
