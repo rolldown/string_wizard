@@ -200,41 +200,52 @@ impl<'text> MagicString<'text> {
     ///
     /// Chunk{span: (0, 3)} => "abc"
     /// Chunk{span: (3, 7)} => "defg"
-    fn split_at(&mut self, text_index: u32) {
-        if text_index == 0 || self.chunk_by_end.contains_key(&text_index) {
+    fn split_at(&mut self, at_index: u32) {
+        if at_index == 0
+            || at_index >= self.source.len()
+            || self.chunk_by_end.contains_key(&at_index)
+        {
             return;
         }
 
-        let (mut target, mut target_idx, search_right) =
-            if (self.source.len() - text_index) > text_index {
+        let (mut candidate, mut candidate_idx, search_right) =
+            if (self.source.len() - at_index) > at_index {
                 (self.first_chunk(), self.first_chunk_idx, true)
             } else {
                 (self.last_chunk(), self.last_chunk_idx, false)
             };
 
-        while !target.contains(text_index) {
+        while !candidate.contains(at_index) {
             let next_idx = if search_right {
-                self.chunk_by_start.get(&target.end()).unwrap()
+                self.chunk_by_start[&candidate.end()]
             } else {
-                self.chunk_by_end.get(&target.start()).unwrap()
+                self.chunk_by_end[&candidate.start()]
             };
-            target = &self.chunks[*next_idx];
-            target_idx = *next_idx;
+            candidate = &self.chunks[next_idx];
+            candidate_idx = next_idx;
         }
 
-        let chunk_contains_index = &mut self.chunks[target_idx];
-        let new_chunk = chunk_contains_index.split(text_index);
-        self.chunk_by_end.insert(text_index, target_idx);
-        let new_chunk_end = new_chunk.end();
-        let new_chunk_idx = self.chunks.push(new_chunk);
-        self.chunk_by_start.insert(text_index, new_chunk_idx);
-        self.chunk_by_end.insert(new_chunk_end, new_chunk_idx);
+        let second_half_chunk = self.chunks[candidate_idx].split(at_index);
+        let second_half_span = second_half_chunk.span;
+        let second_half_idx = self.chunks.push(second_half_chunk);
+        let first_half_idx = candidate_idx;
 
-        let chunk_contains_index = &mut self.chunks[target_idx];
-        if target_idx == self.last_chunk_idx {
-            self.last_chunk_idx = new_chunk_idx
+        // Update the chunk_by_start/end maps
+        self.chunk_by_end.insert(at_index, first_half_idx);
+        self.chunk_by_start.insert(at_index, second_half_idx);
+        self.chunk_by_end
+            .insert(second_half_span.end(), second_half_idx);
+
+        // Make sure the new chunk and the old chunk have correct next/prev pointers
+        self.chunks[second_half_idx].next = self.chunks[first_half_idx].next;
+        if let Some(second_half_next_idx) = self.chunks[second_half_idx].next {
+            self.chunks[second_half_next_idx].prev = Some(second_half_idx);
         }
-        chunk_contains_index.next = Some(new_chunk_idx);
+        self.chunks[second_half_idx].prev = Some(first_half_idx);
+        self.chunks[first_half_idx].next = Some(second_half_idx);
+        if first_half_idx == self.last_chunk_idx {
+            self.last_chunk_idx = second_half_idx
+        }
     }
 
     fn by_start_mut(&mut self, text_index: impl AssertIntoU32) -> Option<&mut Chunk<'text>> {

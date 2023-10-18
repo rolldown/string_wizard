@@ -25,7 +25,7 @@ impl<'s> MagicString<'s> {
                 mappings.advance(frag);
             });
 
-            let name_idx = if chunk.store_name && chunk.is_edited() {
+            let name_idx = if chunk.keep_in_mappings && chunk.is_edited() {
                 let original_content = chunk.span.text(&self.source);
 
                 let idx = names

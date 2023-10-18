@@ -32,8 +32,9 @@ pub struct Chunk<'str> {
     pub outro: VecDeque<CowStr<'str>>,
     pub span: Span,
     pub edited_content: Option<CowStr<'str>>,
-    pub(crate) next: Option<ChunkIdx>,
-    pub store_name: bool,
+    pub next: Option<ChunkIdx>,
+    pub prev: Option<ChunkIdx>,
+    pub keep_in_mappings: bool,
 }
 
 impl<'s> Chunk<'s> {
@@ -76,20 +77,26 @@ impl<'str> Chunk<'str> {
     }
 
     pub fn split<'a>(&'a mut self, text_index: TextSize) -> Chunk<'str> {
-        debug_assert!(text_index > self.start());
-        debug_assert!(text_index < self.end());
+        if !(text_index > self.start() && text_index < self.end()) {
+            panic!("Cannot split chunk at {text_index} between {:?}", self.span);
+        }
         if self.edited_content.is_some() {
             panic!("Cannot split a chunk that has already been edited")
         }
-        let first_slice_span = Span(self.start(), text_index);
-        let last_slice_span = Span(text_index, self.end());
-        let mut new_chunk = Chunk::new(last_slice_span);
+        let first_half_slice = Span(self.start(), text_index);
+        let second_half_slice = Span(text_index, self.end());
+        let mut new_chunk = Chunk::new(second_half_slice);
         if self.is_edited() {
-            new_chunk.edit("".into(), Default::default());
+            new_chunk.edit(
+                "".into(),
+                EditOptions {
+                    store_name: self.keep_in_mappings,
+                    overwrite: false,
+                },
+            );
         }
         std::mem::swap(&mut new_chunk.outro, &mut self.outro);
-        self.span = first_slice_span;
-        new_chunk.next = self.next;
+        self.span = first_half_slice;
         new_chunk
     }
 
@@ -112,7 +119,7 @@ impl<'str> Chunk<'str> {
             self.intro.clear();
             self.outro.clear();
         }
-        self.store_name = opts.store_name;
+        self.keep_in_mappings = opts.store_name;
         self.edited_content = Some(content);
     }
 

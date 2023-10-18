@@ -150,6 +150,123 @@ mod overwrite {
     // }
 }
 
+mod relocate {
+    use super::*;
+
+    #[test]
+    fn moves_content_from_the_start() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(0, 3, 6);
+        assert_eq!(s.to_string(), "defabcghijkl");
+    }
+
+    #[test]
+    fn moves_content_to_the_start() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(3, 6, 0);
+        assert_eq!(s.to_string(), "defabcghijkl");
+    }
+
+    #[test]
+    fn moves_content_from_the_end() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(9, 12, 6);
+        assert_eq!(s.to_string(), "abcdefjklghi");
+    }
+
+    #[test]
+    fn moves_content_to_the_end() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(6, 9, 12);
+        assert_eq!(s.to_string(), "abcdefjklghi");
+    }
+
+    #[test]
+    fn ignores_redundant_move() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.prepend_right(9, "X")
+            .relocate(9, 12, 6)
+            .append_left(12, "Y")
+            // this is redundant – [6,9] is already after [9,12]
+            .relocate(6, 9, 12);
+
+        assert_eq!(s.to_string(), "abcdefXjklYghi");
+    }
+
+    #[test]
+    fn moves_content_to_the_middle() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(3, 6, 9);
+        assert_eq!(s.to_string(), "abcghidefjkl");
+    }
+
+    #[test]
+    fn handles_multiple_moves_of_the_same_snippet() {
+        let mut s = MagicString::new("abcdefghijkl");
+
+        s.relocate(0, 3, 6);
+        assert_eq!(s.to_string(), "defabcghijkl");
+
+        s.relocate(0, 3, 9);
+        assert_eq!(s.to_string(), "defghiabcjkl");
+    }
+
+    #[test]
+    fn handles_moves_of_adjacent_snippets() {
+        let mut s = MagicString::new("abcdefghijkl");
+
+        s.relocate(0, 2, 6);
+        assert_eq!(s.to_string(), "cdefabghijkl");
+        s.relocate(2, 4, 6);
+        assert_eq!(s.to_string(), "efabcdghijkl");
+    }
+
+    #[test]
+    fn handles_moves_to_same_index() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(0, 2, 6).relocate(3, 5, 6);
+        assert_eq!(s.to_string(), "cfabdeghijkl");
+    }
+
+    #[test]
+    #[should_panic]
+    fn refuses_to_move_a_selection_to_inside_itself() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(3, 6, 3);
+    }
+    #[test]
+    #[should_panic]
+    fn refuses_to_move_a_selection_to_inside_itself2() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(3, 6, 4);
+    }
+    #[test]
+    #[should_panic]
+    fn refuses_to_move_a_selection_to_inside_itself3() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.relocate(3, 6, 6);
+    }
+
+    #[test]
+    fn allows_edits_of_moved_content() {
+        let mut s1 = MagicString::new("abcdefghijkl");
+        s1.relocate(3, 6, 9);
+        s1.overwrite(3, 6, "DEF");
+        assert_eq!(s1.to_string(), "abcghiDEFjkl");
+        let mut s2 = MagicString::new("abcdefghijkl");
+        s2.relocate(3, 6, 9);
+        s2.overwrite(4, 5, "E");
+        assert_eq!(s2.to_string(), "abcghidEfjkl");
+    }
+
+    #[test]
+    fn moves_content_inserted_at_end_of_range() {
+        let mut s = MagicString::new("abcdefghijkl");
+        s.append_left(6, "X").relocate(3, 6, 9);
+        assert_eq!(s.to_string(), "abcghidefXjkl");
+    }
+}
+
 mod misc {
     use super::*;
 
