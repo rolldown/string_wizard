@@ -63,6 +63,9 @@ impl<'text> MagicString<'text> {
         let start = start.assert_into_u32();
         let end = end.assert_into_u32();
         let to = to.assert_into_u32();
+        if to >= start && to <= end {
+            panic!("Cannot relocate a selection inside itself")
+        }
 
         self.split_at(start);
         self.split_at(end);

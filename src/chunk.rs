@@ -39,7 +39,6 @@ pub struct Chunk<'str> {
 
 impl<'s> Chunk<'s> {
     pub fn new(span: Span) -> Self {
-        debug_assert!(span.0 < span.1);
         Self {
             span,
             ..Default::default()

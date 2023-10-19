@@ -287,4 +287,13 @@ mod misc {
         assert_eq!(s.remove(0, 3).to_string(), "3456");
         assert_eq!(s.remove(3, 7).to_string(), "");
     }
+
+    #[test]
+    fn allow_empty_input() {
+        let mut s = MagicString::new("");
+        s.append("xyz");
+        assert_eq!(s.to_string(), "xyz");
+        s.prepend("xyz");
+        assert_eq!(s.to_string(), "xyzxyz");
+    }
 }
