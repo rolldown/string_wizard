@@ -55,7 +55,7 @@ impl<'s> MagicString<'s> {
             sources: vec!["".to_string()],
             sources_content: opts
                 .include_content
-                .then(|| vec![self.source.as_str().to_string()])
+                .then(|| vec![self.source.as_ref().to_string()])
                 .unwrap_or_default(),
             mappings,
             names,

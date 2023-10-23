@@ -1,3 +1,4 @@
+pub mod indent;
 pub mod mutation;
 #[cfg(feature = "source_map")]
 pub mod source_map;
@@ -23,8 +24,9 @@ pub struct MagicString<'s> {
     pub filename: Option<String>,
     intro: VecDeque<CowStr<'s>>,
     outro: VecDeque<CowStr<'s>>,
-
+    indent_str: Option<String>,
     source: CowStr<'s>,
+    source_len: TextSize,
     chunks: ChunkVec<'s>,
     first_chunk_idx: ChunkIdx,
     last_chunk_idx: ChunkIdx,
@@ -41,13 +43,15 @@ impl<'text> MagicString<'text> {
 
     pub fn with_options(source: impl Into<CowStr<'text>>, options: MagicStringOptions) -> Self {
         let source = source.into();
-        let initial_chunk = Chunk::new(Span(0, source.len()));
+        let source_len = u32::try_from(source.len()).unwrap();
+        let initial_chunk = Chunk::new(Span(0, source_len));
         let mut chunks = ChunkVec::with_capacity(1);
         let initial_chunk_idx = chunks.push(initial_chunk);
         let mut magic_string = Self {
             intro: Default::default(),
             outro: Default::default(),
             source,
+            source_len,
             first_chunk_idx: initial_chunk_idx,
             last_chunk_idx: initial_chunk_idx,
             chunks,
@@ -55,12 +59,13 @@ impl<'text> MagicString<'text> {
             chunk_by_end: Default::default(),
             // setup options
             filename: options.filename,
+            indent_str: None,
         };
 
         magic_string.chunk_by_start.insert(0, initial_chunk_idx);
         magic_string
             .chunk_by_end
-            .insert(magic_string.source.len(), initial_chunk_idx);
+            .insert(source_len, initial_chunk_idx);
 
         magic_string
     }
@@ -201,15 +206,13 @@ impl<'text> MagicString<'text> {
     /// Chunk{span: (0, 3)} => "abc"
     /// Chunk{span: (3, 7)} => "defg"
     fn split_at(&mut self, at_index: u32) {
-        if at_index == 0
-            || at_index >= self.source.len()
-            || self.chunk_by_end.contains_key(&at_index)
+        if at_index == 0 || at_index >= self.source_len || self.chunk_by_end.contains_key(&at_index)
         {
             return;
         }
 
         let (mut candidate, mut candidate_idx, search_right) =
-            if (self.source.len() - at_index) > at_index {
+            if (self.source_len - at_index) > at_index {
                 (self.first_chunk(), self.first_chunk_idx, true)
             } else {
                 (self.last_chunk(), self.last_chunk_idx, false)
@@ -250,7 +253,7 @@ impl<'text> MagicString<'text> {
 
     fn by_start_mut(&mut self, text_index: impl AssertIntoU32) -> Option<&mut Chunk<'text>> {
         let text_index = text_index.assert_into_u32();
-        if text_index == self.source.len() {
+        if text_index == self.source_len {
             None
         } else {
             self.split_at(text_index);
@@ -298,3 +301,4 @@ impl<'a> Iterator for ChunkIter<'a> {
         })
     }
 }
+

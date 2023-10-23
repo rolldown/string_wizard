@@ -267,6 +267,111 @@ mod relocate {
     }
 }
 
+mod indent {
+    use super::*;
+
+    #[test]
+    fn should_indent_content_with_a_single_tab_character_by_default() {
+        let mut s = MagicString::new("abc\ndef\nghi\njkl");
+        s.indent();
+        assert_eq!(s.to_string(), "\tabc\n\tdef\n\tghi\n\tjkl")
+    }
+    
+    #[test]
+    fn should_indent_content_with_a_single_tab_character_by_default2() {
+        let mut s = MagicString::new("");
+        s.prepend("abc\ndef\nghi\njkl");
+        s.indent();
+        assert_eq!(s.to_string(), "\tabc\n\tdef\n\tghi\n\tjkl");
+        let mut s = MagicString::new("");
+        s.prepend("abc\ndef");
+        s.append("\nghi\njkl");
+        s.indent();
+        assert_eq!(s.to_string(), "\tabc\n\tdef\n\tghi\n\tjkl")
+    }
+
+    #[test]
+    fn should_indent_content_using_existing_indentation_as_a_guide() {
+        let mut s = MagicString::new("abc\n  def\n    ghi\n  jkl");
+        s.indent();
+        assert_eq!(s.to_string(), "  abc\n    def\n      ghi\n    jkl");
+
+        s.indent();
+        assert_eq!(s.to_string(), "    abc\n      def\n        ghi\n      jkl");
+    }
+
+    #[test]
+    fn should_disregard_single_space_indentation_when_auto_indenting() {
+        let mut s = MagicString::new("abc\n/**\n *comment\n */");
+        s.indent();
+        assert_eq!(s.to_string(), "\tabc\n\t/**\n\t *comment\n\t */");
+    }
+
+    #[test]
+    fn should_indent_content_using_the_supplied_indent_string() {
+        let mut s = MagicString::new("abc\ndef\nghi\njkl");
+        s.indent_str("  ");
+        assert_eq!(s.to_string(), "  abc\n  def\n  ghi\n  jkl");
+        s.indent_str(">>");
+        assert_eq!(s.to_string(), ">>  abc\n>>  def\n>>  ghi\n>>  jkl");
+    }
+
+    #[test]
+    fn should_indent_content_using_the_empty_string_if_specified() {
+        // should indent content using the empty string if specified (i.e. noop)
+        let mut s = MagicString::new("abc\ndef\nghi\njkl");
+        s.indent_str("");
+        assert_eq!(s.to_string(), "abc\ndef\nghi\njkl");
+    }
+    #[test]
+    #[ignore = "TODO: support exclude"]
+    fn should_prevent_excluded_characters_from_being_indented() {
+        // should indent content using the empty string if specified (i.e. noop)
+        let _s = MagicString::new("abc\ndef\nghi\njkl");
+        // s.indent_with(IndentOptions { indent_str: "  ", exclude: vec![7, 15], });
+
+    }
+
+    #[test]
+    fn should_not_add_characters_to_empty_lines() {
+        // should indent content using the empty string if specified (i.e. noop)
+        let mut s = MagicString::new("\n\nabc\ndef\n\nghi\njkl");
+        s.indent();
+        assert_eq!(s.to_string(), "\n\n\tabc\n\tdef\n\n\tghi\n\tjkl");
+        s.indent();
+        assert_eq!(s.to_string(), "\n\n\t\tabc\n\t\tdef\n\n\t\tghi\n\t\tjkl");
+    }
+
+    #[test]
+    fn should_not_add_characters_to_empty_lines_even_on_windows() {
+        // should indent content using the empty string if specified (i.e. noop)
+        let mut s = MagicString::new("\r\n\r\nabc\r\ndef\r\n\r\nghi\r\njkl");
+        s.indent();
+        assert_eq!(s.to_string(), "\r\n\r\n\tabc\r\n\tdef\r\n\r\n\tghi\r\n\tjkl");
+        s.indent();
+        assert_eq!(s.to_string(), "\r\n\r\n\t\tabc\r\n\t\tdef\r\n\r\n\t\tghi\r\n\t\tjkl");
+    }
+
+    #[test]
+    fn should_indent_content_with_removals() {
+        let mut s = MagicString::new("/* remove this line */\nvar foo = 1;");
+        s.remove(0, 23);
+        s.indent();
+        assert_eq!(s.to_string(), "\tvar foo = 1;");
+    }
+    
+    #[test]
+    fn should_not_indent_patches_in_the_middle_of_a_line() {
+        let mut s = MagicString::new("class Foo extends Bar {}");
+        s.overwrite(18, 21, "Baz");
+        assert_eq!(s.to_string(), "class Foo extends Baz {}");
+        s.indent();
+        assert_eq!(s.to_string(), "\tclass Foo extends Baz {}");
+    }
+
+
+}
+
 mod misc {
     use super::*;
 

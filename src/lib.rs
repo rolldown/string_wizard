@@ -7,15 +7,16 @@ mod magic_string;
 mod source_map;
 mod span;
 
-type CowStr<'text> = BasicCowStr<'text>;
+type CowStr<'text> = Cow<'text, str>;
 
 pub(crate) type TextSize = u32;
 
-use basic_types::BasicCowStr;
+use std::borrow::Cow;
+
 
 pub use crate::{
     joiner::{Joiner, JoinerOptions},
-    magic_string::{mutation::UpdateOptions, MagicString, MagicStringOptions},
+    magic_string::{mutation::UpdateOptions, MagicString, MagicStringOptions, indent::IndentOptions},
 };
 
 #[cfg(feature = "source_map")]
