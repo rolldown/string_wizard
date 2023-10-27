@@ -1,4 +1,6 @@
-use crate::{CowStr, MagicString};
+use rustc_hash::FxHashSet;
+
+use crate::{CowStr, MagicString, TextSize};
 
 fn guess_indent_str(source: &str) -> Option<String> {
     let mut tabbed_count = 0;
@@ -36,6 +38,7 @@ fn guess_indent_str(source: &str) -> Option<String> {
 pub struct IndentOptions<'a> {
     /// MagicString will guess the `indent_str`` from lines of the source if passed `None`.
     pub indent_str: Option<&'a str>,
+    pub exclude: Vec<TextSize>,
 }
 
 impl<'text> MagicString<'text> {
@@ -48,13 +51,17 @@ impl<'text> MagicString<'text> {
     }
 
     pub fn indent(&mut self) -> &mut Self {
-        self.indent_with(IndentOptions { indent_str: None })
+        self.indent_with(IndentOptions {
+            indent_str: None,
+            ..Default::default()
+        })
     }
 
     /// Shortcut for `indent_with(IndentOptions { indent_str: Some(indent_str), ..Default::default() })`
     pub fn indent_str(&mut self, indent_str: &str) -> &mut Self {
         self.indent_with(IndentOptions {
             indent_str: Some(indent_str),
+            ..Default::default()
         })
     }
 
@@ -116,33 +123,49 @@ impl<'text> MagicString<'text> {
         for intro_frag in self.intro.iter_mut() {
             indent_frag(intro_frag, &pattern, &mut indent_replacer)
         }
-
+        let is_excluded = {
+            let mut is_excluded = FxHashSet::default();
+            let mut exclude = opts.exclude;
+            exclude.sort();
+            exclude.windows(2).for_each(|s| {
+                for i in s[0]..s[1] {
+                    is_excluded.insert(i);
+                }
+            });
+            is_excluded
+        };
         let mut next_chunk_id = Some(self.first_chunk_idx);
-
+        let mut char_index = 0u32;
         while let Some(chunk_idx) = next_chunk_id {
             // Make sure the `next_chunk_id` is updated before we split the chunk. Otherwise, we
             // might process the same chunk twice.
             next_chunk_id = self.chunks[chunk_idx].next;
             if let Some(edited_content) = self.chunks[chunk_idx].edited_content.as_mut() {
-                indent_frag(edited_content, &pattern, &mut indent_replacer);
+                if !is_excluded.contains(&char_index) {
+                    indent_frag(edited_content, &pattern, &mut indent_replacer);
+                }
             } else {
                 let chunk = &self.chunks[chunk_idx];
                 let mut line_starts = vec![];
-                let mut char_index = chunk.start();
+                char_index = chunk.start();
+                let chunk_end = chunk.end();
                 for char in chunk.span.text(&self.source).chars() {
                     debug_assert!(self.source.is_char_boundary(char_index as usize));
-                    if char == '\n' {
-                        indent_replacer.should_indent_next_char = true;
-                    } else if char != '\r' && indent_replacer.should_indent_next_char {
-                        indent_replacer.should_indent_next_char = false;
-                        debug_assert!(!line_starts.contains(&char_index));
-                        line_starts.push(char_index);
+                    if !is_excluded.contains(&char_index) {
+                        if char == '\n' {
+                            indent_replacer.should_indent_next_char = true;
+                        } else if char != '\r' && indent_replacer.should_indent_next_char {
+                            indent_replacer.should_indent_next_char = false;
+                            debug_assert!(!line_starts.contains(&char_index));
+                            line_starts.push(char_index);
+                        }
                     }
                     char_index += char.len_utf8() as u32;
                 }
                 for line_start in line_starts {
                     self.prepend_right(line_start, indent_replacer.indent_str.clone());
                 }
+                char_index = chunk_end;
             }
         }
 

@@ -268,6 +268,8 @@ mod relocate {
 }
 
 mod indent {
+    use string_wizard::IndentOptions;
+
     use super::*;
 
     #[test]
@@ -276,7 +278,7 @@ mod indent {
         s.indent();
         assert_eq!(s.to_string(), "\tabc\n\tdef\n\tghi\n\tjkl")
     }
-    
+
     #[test]
     fn should_indent_content_with_a_single_tab_character_by_default2() {
         let mut s = MagicString::new("");
@@ -324,12 +326,18 @@ mod indent {
         assert_eq!(s.to_string(), "abc\ndef\nghi\njkl");
     }
     #[test]
-    #[ignore = "TODO: support exclude"]
     fn should_prevent_excluded_characters_from_being_indented() {
-        // should indent content using the empty string if specified (i.e. noop)
-        let _s = MagicString::new("abc\ndef\nghi\njkl");
-        // s.indent_with(IndentOptions { indent_str: "  ", exclude: vec![7, 15], });
-
+        let mut s = MagicString::new("abc\ndef\nghi\njkl");
+        s.indent_with(IndentOptions {
+            indent_str: Some("  "),
+            exclude: vec![7, 15],
+        });
+        assert_eq!(s.to_string(), "  abc\n  def\nghi\njkl");
+        s.indent_with(IndentOptions {
+            indent_str: Some(">>"),
+            exclude: vec![7, 15],
+        });
+        assert_eq!(s.to_string(), ">>  abc\n>>  def\nghi\njkl");
     }
 
     #[test]
@@ -347,9 +355,15 @@ mod indent {
         // should indent content using the empty string if specified (i.e. noop)
         let mut s = MagicString::new("\r\n\r\nabc\r\ndef\r\n\r\nghi\r\njkl");
         s.indent();
-        assert_eq!(s.to_string(), "\r\n\r\n\tabc\r\n\tdef\r\n\r\n\tghi\r\n\tjkl");
+        assert_eq!(
+            s.to_string(),
+            "\r\n\r\n\tabc\r\n\tdef\r\n\r\n\tghi\r\n\tjkl"
+        );
         s.indent();
-        assert_eq!(s.to_string(), "\r\n\r\n\t\tabc\r\n\t\tdef\r\n\r\n\t\tghi\r\n\t\tjkl");
+        assert_eq!(
+            s.to_string(),
+            "\r\n\r\n\t\tabc\r\n\t\tdef\r\n\r\n\t\tghi\r\n\t\tjkl"
+        );
     }
 
     #[test]
@@ -359,7 +373,7 @@ mod indent {
         s.indent();
         assert_eq!(s.to_string(), "\tvar foo = 1;");
     }
-    
+
     #[test]
     fn should_not_indent_patches_in_the_middle_of_a_line() {
         let mut s = MagicString::new("class Foo extends Bar {}");
@@ -368,8 +382,6 @@ mod indent {
         s.indent();
         assert_eq!(s.to_string(), "\tclass Foo extends Baz {}");
     }
-
-
 }
 
 mod misc {
