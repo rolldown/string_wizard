@@ -33,14 +33,13 @@ impl<'text> MagicStringExt<'text> for MagicString<'text> {
             },
         )
     }
-       /// Shortcut for `indent_with(IndentOptions { indent_str: Some(indent_str), ..Default::default() })`
+    /// Shortcut for `indent_with(IndentOptions { indent_str: Some(indent_str), ..Default::default() })`
     fn indent_str(&mut self, indent_str: &str) -> &mut Self {
         self.indent_with(IndentOptions {
             indentor: Some(indent_str),
             ..Default::default()
         })
     }
-
 }
 
 mod options {
@@ -341,12 +340,12 @@ mod indent {
         let mut s = MagicString::new("abc\ndef\nghi\njkl");
         s.indent_with(IndentOptions {
             indentor: Some("  "),
-            exclude: vec![7, 15],
+            exclude: vec![[7, 15]],
         });
         assert_eq!(s.to_string(), "  abc\n  def\nghi\njkl");
         s.indent_with(IndentOptions {
             indentor: Some(">>"),
-            exclude: vec![7, 15],
+            exclude: vec![[7, 15]],
         });
         assert_eq!(s.to_string(), ">>  abc\n>>  def\nghi\njkl");
     }

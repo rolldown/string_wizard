@@ -38,12 +38,18 @@ pub fn guess_indentor(source: &str) -> Option<String> {
 pub struct IndentOptions<'a> {
     /// MagicString will guess the `indentor`` from lines of the source if passed `None`.
     pub indentor: Option<&'a str>,
-    pub exclude: Vec<TextSize>,
+
+    /// The reason I use `[u32; 2]` instead of `(u32, u32)` to represent a range of text is that
+    /// I want to emphasize that the `[u32; 2]` is the closed interval, which means both the start
+    /// and the end are included in the range.
+    pub exclude: Vec<[TextSize; 2]>,
 }
 
 impl<'text> MagicString<'text> {
     pub fn guessed_indentor(&mut self) -> &str {
-        let guessed_indentor = self.guessed_indentor.get_or_init(|| guess_indentor(&self.source).unwrap_or_else(|| "\t".to_string()));
+        let guessed_indentor = self
+            .guessed_indentor
+            .get_or_init(|| guess_indentor(&self.source).unwrap_or_else(|| "\t".to_string()));
         guessed_indentor
     }
 
@@ -54,7 +60,6 @@ impl<'text> MagicString<'text> {
         })
     }
 
- 
     pub fn indent_with(&mut self, opts: IndentOptions<'_>) -> &mut Self {
         if opts.indentor.map_or(false, |s| s.is_empty()) {
             return self;
@@ -115,9 +120,8 @@ impl<'text> MagicString<'text> {
         }
         let is_excluded = {
             let mut is_excluded = FxHashSet::default();
-            let mut exclude = opts.exclude;
-            exclude.sort();
-            exclude.windows(2).for_each(|s| {
+            let exclude = opts.exclude;
+            exclude.iter().for_each(|s| {
                 for i in s[0]..s[1] {
                     is_excluded.insert(i);
                 }
