@@ -2,9 +2,11 @@ pub mod indent;
 pub mod mutation;
 #[cfg(feature = "source_map")]
 pub mod source_map;
+pub mod update;
 
 use std::collections::VecDeque;
 
+use once_cell::sync::OnceCell;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -24,7 +26,6 @@ pub struct MagicString<'s> {
     pub filename: Option<String>,
     intro: VecDeque<CowStr<'s>>,
     outro: VecDeque<CowStr<'s>>,
-    indent_str: Option<String>,
     source: CowStr<'s>,
     source_len: TextSize,
     chunks: ChunkVec<'s>,
@@ -32,6 +33,7 @@ pub struct MagicString<'s> {
     last_chunk_idx: ChunkIdx,
     chunk_by_start: FxHashMap<TextSize, ChunkIdx>,
     chunk_by_end: FxHashMap<TextSize, ChunkIdx>,
+    guessed_indentor: OnceCell<String>,
 }
 
 impl<'text> MagicString<'text> {
@@ -59,7 +61,7 @@ impl<'text> MagicString<'text> {
             chunk_by_end: Default::default(),
             // setup options
             filename: options.filename,
-            indent_str: None,
+            guessed_indentor: OnceCell::default(),
         };
 
         magic_string.chunk_by_start.insert(0, initial_chunk_idx);
@@ -301,4 +303,3 @@ impl<'a> Iterator for ChunkIter<'a> {
         })
     }
 }
-

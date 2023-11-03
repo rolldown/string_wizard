@@ -2,7 +2,7 @@ use rustc_hash::FxHashSet;
 
 use crate::{CowStr, MagicString, TextSize};
 
-fn guess_indent_str(source: &str) -> Option<String> {
+pub fn guess_indentor(source: &str) -> Option<String> {
     let mut tabbed_count = 0;
     let mut spaced_line = vec![];
     for line in source.lines() {
@@ -36,37 +36,27 @@ fn guess_indent_str(source: &str) -> Option<String> {
 
 #[derive(Debug, Default)]
 pub struct IndentOptions<'a> {
-    /// MagicString will guess the `indent_str`` from lines of the source if passed `None`.
-    pub indent_str: Option<&'a str>,
+    /// MagicString will guess the `indentor`` from lines of the source if passed `None`.
+    pub indentor: Option<&'a str>,
     pub exclude: Vec<TextSize>,
 }
 
 impl<'text> MagicString<'text> {
-    fn ensure_indent_str(&mut self) -> &str {
-        if self.indent_str.is_none() {
-            self.indent_str = guess_indent_str(&self.source);
-        }
-
-        self.indent_str.as_deref().unwrap_or(&"\t")
+    pub fn guessed_indentor(&mut self) -> &str {
+        let guessed_indentor = self.guessed_indentor.get_or_init(|| guess_indentor(&self.source).unwrap_or_else(|| "\t".to_string()));
+        guessed_indentor
     }
 
     pub fn indent(&mut self) -> &mut Self {
         self.indent_with(IndentOptions {
-            indent_str: None,
+            indentor: None,
             ..Default::default()
         })
     }
 
-    /// Shortcut for `indent_with(IndentOptions { indent_str: Some(indent_str), ..Default::default() })`
-    pub fn indent_str(&mut self, indent_str: &str) -> &mut Self {
-        self.indent_with(IndentOptions {
-            indent_str: Some(indent_str),
-            ..Default::default()
-        })
-    }
-
+ 
     pub fn indent_with(&mut self, opts: IndentOptions<'_>) -> &mut Self {
-        if opts.indent_str.map_or(false, |s| s.is_empty()) {
+        if opts.indentor.map_or(false, |s| s.is_empty()) {
             return self;
         }
         struct IndentReplacer {
@@ -111,13 +101,13 @@ impl<'text> MagicString<'text> {
             }
         }
 
-        let indent_str = opts.indent_str.unwrap_or_else(|| self.ensure_indent_str());
+        let indentor = opts.indentor.unwrap_or_else(|| self.guessed_indentor());
 
         let pattern = regex::Regex::new(r"(?m)^[^\r\n]").unwrap();
 
         let mut indent_replacer = IndentReplacer {
             should_indent_next_char: true,
-            indent_str: indent_str.to_string(),
+            indent_str: indentor.to_string(),
         };
 
         for intro_frag in self.intro.iter_mut() {

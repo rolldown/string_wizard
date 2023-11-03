@@ -16,7 +16,7 @@ use std::borrow::Cow;
 
 pub use crate::{
     joiner::{Joiner, JoinerOptions},
-    magic_string::{mutation::UpdateOptions, MagicString, MagicStringOptions, indent::IndentOptions},
+    magic_string::{update::UpdateOptions, MagicString, MagicStringOptions, indent::IndentOptions},
 };
 
 #[cfg(feature = "source_map")]

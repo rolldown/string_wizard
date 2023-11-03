@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use string_wizard::IndentOptions;
 use string_wizard::MagicString;
 use string_wizard::MagicStringOptions;
 use string_wizard::UpdateOptions;
@@ -11,6 +12,8 @@ trait MagicStringExt<'text> {
         end: usize,
         content: impl Into<Cow<'text, str>>,
     ) -> &mut Self;
+
+    fn indent_str(&mut self, indent_str: &str) -> &mut Self;
 }
 
 impl<'text> MagicStringExt<'text> for MagicString<'text> {
@@ -30,6 +33,14 @@ impl<'text> MagicStringExt<'text> for MagicString<'text> {
             },
         )
     }
+       /// Shortcut for `indent_with(IndentOptions { indent_str: Some(indent_str), ..Default::default() })`
+    fn indent_str(&mut self, indent_str: &str) -> &mut Self {
+        self.indent_with(IndentOptions {
+            indentor: Some(indent_str),
+            ..Default::default()
+        })
+    }
+
 }
 
 mod options {
@@ -329,12 +340,12 @@ mod indent {
     fn should_prevent_excluded_characters_from_being_indented() {
         let mut s = MagicString::new("abc\ndef\nghi\njkl");
         s.indent_with(IndentOptions {
-            indent_str: Some("  "),
+            indentor: Some("  "),
             exclude: vec![7, 15],
         });
         assert_eq!(s.to_string(), "  abc\n  def\nghi\njkl");
         s.indent_with(IndentOptions {
-            indent_str: Some(">>"),
+            indentor: Some(">>"),
             exclude: vec![7, 15],
         });
         assert_eq!(s.to_string(), ">>  abc\n>>  def\nghi\njkl");
