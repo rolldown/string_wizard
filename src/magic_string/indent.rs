@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use rustc_hash::FxHashSet;
 
 use crate::{CowStr, MagicString, TextSize};
@@ -66,57 +68,37 @@ impl<'text> MagicString<'text> {
         }
         struct IndentReplacer {
             should_indent_next_char: bool,
-            indent_str: String,
+            indentor: String,
         }
 
-        impl regex::Replacer for &mut &mut IndentReplacer {
-            fn replace_append(&mut self, caps: &regex::Captures<'_>, dst: &mut String) {
-                if self.should_indent_next_char {
-                    dst.push_str(&self.indent_str);
-                }
-                for cap in caps.iter() {
-                    if let Some(cap) = cap {
-                        dst.push_str(cap.as_str());
-                    }
-                }
-            }
-        }
 
         fn indent_frag<'text>(
             frag: &mut CowStr<'text>,
-            pattern: &regex::Regex,
-            mut indent_replacer: &mut IndentReplacer,
+            indent_replacer: &mut IndentReplacer,
         ) {
-            match frag {
-                std::borrow::Cow::Borrowed(str) => {
-                    let might_replaced = pattern.replace_all(str, &mut indent_replacer);
-                    *frag = might_replaced;
+            let mut indented = String::new();
+            for char in frag.chars() {
+                if char == '\n' {
+                    indent_replacer.should_indent_next_char = true;
+                } else if char != '\r' && indent_replacer.should_indent_next_char {
+                    indent_replacer.should_indent_next_char = false;
+                    indented.push_str(&indent_replacer.indentor);
                 }
-                std::borrow::Cow::Owned(str) => {
-                    let might_replaced = pattern.replace_all(str, &mut indent_replacer);
-                    match might_replaced {
-                        std::borrow::Cow::Owned(replaced) => {
-                            *frag = replaced.into();
-                        }
-                        std::borrow::Cow::Borrowed(_) => {
-                            // Since nothing was replaced, we can just use the original string.
-                        }
-                    }
-                }
+                indented.push(char);
             }
+            *frag = Cow::Owned(indented);
         }
 
         let indentor = opts.indentor.unwrap_or_else(|| self.guessed_indentor());
 
-        let pattern = regex::Regex::new(r"(?m)^[^\r\n]").unwrap();
 
         let mut indent_replacer = IndentReplacer {
             should_indent_next_char: true,
-            indent_str: indentor.to_string(),
+            indentor: indentor.to_string(),
         };
 
         for intro_frag in self.intro.iter_mut() {
-            indent_frag(intro_frag, &pattern, &mut indent_replacer)
+            indent_frag(intro_frag, &mut indent_replacer)
         }
         let is_excluded = {
             let mut is_excluded = FxHashSet::default();
@@ -136,7 +118,7 @@ impl<'text> MagicString<'text> {
             next_chunk_id = self.chunks[chunk_idx].next;
             if let Some(edited_content) = self.chunks[chunk_idx].edited_content.as_mut() {
                 if !is_excluded.contains(&char_index) {
-                    indent_frag(edited_content, &pattern, &mut indent_replacer);
+                    indent_frag(edited_content,  &mut indent_replacer);
                 }
             } else {
                 let chunk = &self.chunks[chunk_idx];
@@ -157,14 +139,14 @@ impl<'text> MagicString<'text> {
                     char_index += char.len_utf8() as u32;
                 }
                 for line_start in line_starts {
-                    self.prepend_right(line_start, indent_replacer.indent_str.clone());
+                    self.prepend_right(line_start, indent_replacer.indentor.clone());
                 }
                 char_index = chunk_end;
             }
         }
 
         for frag in self.outro.iter_mut() {
-            indent_frag(frag, &pattern, &mut indent_replacer)
+            indent_frag(frag,  &mut indent_replacer)
         }
 
         self

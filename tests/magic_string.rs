@@ -379,6 +379,7 @@ mod indent {
     #[test]
     fn should_indent_content_with_removals() {
         let mut s = MagicString::new("/* remove this line */\nvar foo = 1;");
+        // remove `/* remove this line */\n`
         s.remove(0, 23);
         s.indent();
         assert_eq!(s.to_string(), "\tvar foo = 1;");
