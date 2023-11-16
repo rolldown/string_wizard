@@ -1,6 +1,6 @@
 [package]
 name = "string_wizard"
-version = "0.0.15"
+version = "0.0.16"
 edition = "2021"
 license = "MIT"
 description = "manipulate string like wizards"
@@ -27,3 +27,6 @@ insta = "1.31.0"
 [[bench]]
 name = "joiner_join"
 harness = false
+
+[profile.release]
+debug = true
