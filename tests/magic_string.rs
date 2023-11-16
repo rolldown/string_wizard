@@ -340,12 +340,12 @@ mod indent {
         let mut s = MagicString::new("abc\ndef\nghi\njkl");
         s.indent_with(IndentOptions {
             indentor: Some("  "),
-            exclude: vec![[7, 15]],
+            exclude: &[(7, 15)],
         });
         assert_eq!(s.to_string(), "  abc\n  def\nghi\njkl");
         s.indent_with(IndentOptions {
             indentor: Some(">>"),
-            exclude: vec![[7, 15]],
+            exclude: &[(7, 15)],
         });
         assert_eq!(s.to_string(), ">>  abc\n>>  def\nghi\njkl");
     }
@@ -392,6 +392,16 @@ mod indent {
         assert_eq!(s.to_string(), "class Foo extends Baz {}");
         s.indent();
         assert_eq!(s.to_string(), "\tclass Foo extends Baz {}");
+    }
+
+    #[test]
+    fn should_ignore_the_end_of_each_exclude_range() {
+        let mut s = MagicString::new("012\n456\n89a\nbcd");
+        s.indent_with(IndentOptions {
+            indentor: Some(">"),
+            exclude: &[(0, 3)],
+        });
+        assert_eq!(s.to_string(), "012\n>456\n>89a\n>bcd");
     }
 }
 
