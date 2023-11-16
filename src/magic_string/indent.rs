@@ -1,8 +1,20 @@
 use std::borrow::Cow;
 
-use rustc_hash::FxHashSet;
-
 use crate::{CowStr, MagicString, TextSize};
+
+struct ExcludeSet {
+    exclude: Vec<[TextSize; 2]>,
+}
+
+impl ExcludeSet {
+    fn new(exclude: Vec<[TextSize; 2]>) -> Self {
+        Self { exclude }
+    }
+
+    fn contains(&self, index: TextSize) -> bool {
+        self.exclude.iter().any(|s| s[0] <= index && index <= s[1])
+    }
+}
 
 pub fn guess_indentor(source: &str) -> Option<String> {
     let mut tabbed_count = 0;
@@ -100,16 +112,9 @@ impl<'text> MagicString<'text> {
         for intro_frag in self.intro.iter_mut() {
             indent_frag(intro_frag, &mut indent_replacer)
         }
-        let is_excluded = {
-            let mut is_excluded = FxHashSet::default();
-            let exclude = opts.exclude;
-            exclude.iter().for_each(|s| {
-                for i in s[0]..s[1] {
-                    is_excluded.insert(i);
-                }
-            });
-            is_excluded
-        };
+
+        let exclude_set = ExcludeSet::new(opts.exclude);
+        
         let mut next_chunk_id = Some(self.first_chunk_idx);
         let mut char_index = 0u32;
         while let Some(chunk_idx) = next_chunk_id {
@@ -117,7 +122,7 @@ impl<'text> MagicString<'text> {
             // might process the same chunk twice.
             next_chunk_id = self.chunks[chunk_idx].next;
             if let Some(edited_content) = self.chunks[chunk_idx].edited_content.as_mut() {
-                if !is_excluded.contains(&char_index) {
+                if !exclude_set.contains(char_index) {
                     indent_frag(edited_content,  &mut indent_replacer);
                 }
             } else {
@@ -127,7 +132,7 @@ impl<'text> MagicString<'text> {
                 let chunk_end = chunk.end();
                 for char in chunk.span.text(&self.source).chars() {
                     debug_assert!(self.source.is_char_boundary(char_index as usize));
-                    if !is_excluded.contains(&char_index) {
+                    if !exclude_set.contains(char_index) {
                         if char == '\n' {
                             indent_replacer.should_indent_next_char = true;
                         } else if char != '\r' && indent_replacer.should_indent_next_char {
