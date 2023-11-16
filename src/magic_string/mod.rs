@@ -240,6 +240,9 @@ impl<'text> MagicString<'text> {
         let second_half_idx = self.chunks.push(second_half_chunk);
         let first_half_idx = candidate_idx;
 
+        // Update the last searched chunk
+        self.last_searched_chunk_idx = first_half_idx;
+
         // Update the chunk_by_start/end maps
         self.chunk_by_end.insert(at_index, first_half_idx);
         self.chunk_by_start.insert(at_index, second_half_idx);
