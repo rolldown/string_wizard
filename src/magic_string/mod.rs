@@ -34,6 +34,9 @@ pub struct MagicString<'s> {
     chunk_by_start: FxHashMap<TextSize, ChunkIdx>,
     chunk_by_end: FxHashMap<TextSize, ChunkIdx>,
     guessed_indentor: OnceCell<String>,
+
+    // This is used to speed up the search for the chunk that contains a given index.
+    last_searched_chunk_idx: ChunkIdx,
 }
 
 impl<'text> MagicString<'text> {
@@ -62,6 +65,7 @@ impl<'text> MagicString<'text> {
             // setup options
             filename: options.filename,
             guessed_indentor: OnceCell::default(),
+            last_searched_chunk_idx: initial_chunk_idx,
         };
 
         magic_string.chunk_by_start.insert(0, initial_chunk_idx);
@@ -213,12 +217,13 @@ impl<'text> MagicString<'text> {
             return;
         }
 
-        let (mut candidate, mut candidate_idx, search_right) =
-            if (self.source_len - at_index) > at_index {
-                (self.first_chunk(), self.first_chunk_idx, true)
-            } else {
-                (self.last_chunk(), self.last_chunk_idx, false)
-            };
+        let (mut candidate, mut candidate_idx, search_right) = {
+            let last_searched_chunk = &self.chunks[self.last_searched_chunk_idx];
+            let search_right = at_index > last_searched_chunk.end();
+
+            (last_searched_chunk, self.last_searched_chunk_idx, search_right)
+        };
+        
 
         while !candidate.contains(at_index) {
             let next_idx = if search_right {
