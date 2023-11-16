@@ -281,14 +281,6 @@ impl<'text> MagicString<'text> {
             Some(&mut self.chunks[*idx])
         }
     }
-
-    fn last_chunk(&self) -> &Chunk<'text> {
-        &self.chunks[self.last_chunk_idx]
-    }
-
-    fn first_chunk(&self) -> &Chunk<'text> {
-        &self.chunks[self.first_chunk_idx]
-    }
 }
 
 struct ChunkIter<'a> {
