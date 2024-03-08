@@ -1,0 +1,92 @@
+use crate::{chunk::Chunk, locator::Locator, TextSize};
+
+pub struct SourcemapBuilder {
+    generated_code_line: TextSize,
+    /// `generated_code_column` is calculated based on utf-16.
+    generated_code_column: TextSize,
+    source_id: u32, 
+    source_map_builder: sourcemap::SourceMapBuilder,
+}
+
+impl SourcemapBuilder {
+    pub fn new() -> Self {
+        Self {
+            generated_code_line: 0,
+            generated_code_column: 0,
+            source_id: 0,
+            source_map_builder: sourcemap::SourceMapBuilder::new(None),
+        }
+    }
+
+    pub fn into_source_map(self) -> sourcemap::SourceMap {
+        self.source_map_builder.into_sourcemap()
+    }
+
+    pub fn set_source(&mut self, source: &str)  {
+        self.source_id =  self.source_map_builder.add_source(source);
+    }
+
+    pub fn set_source_contents(&mut self, content: &str) {
+        self.source_map_builder.set_source_contents(self.source_id, Some(content));
+    }
+
+    pub fn add_chunk(
+        &mut self,
+        chunk: &Chunk,
+        locator: &Locator,
+        source: &str,
+        name: Option<&str>
+    ) {
+        let name_id = name.map(|name| self.source_map_builder.add_name(name));
+        let mut loc = locator.locate(chunk.start());
+        if let Some(edited_content) = &chunk.edited_content {
+            if !edited_content.is_empty() {
+                self.source_map_builder.add_raw(self.generated_code_line, self.generated_code_column, loc.line, loc.column, Some(self.source_id), name_id);
+            }
+            self.advance(edited_content);
+        } else {
+            let chunk_content = chunk.span.text(source);
+            let mut new_line = true;
+            for char in chunk_content.chars() {
+                match char {
+                    '\n' => {
+                        loc.bump_line();
+                        self.bump_line();
+                        new_line = true;
+                    }
+                    _ => {
+                        if new_line {
+                            new_line = false;
+                            self.source_map_builder.add_raw(self.generated_code_line, self.generated_code_column, loc.line, loc.column, Some(self.source_id), name_id);
+                        }
+
+                        let char_utf16_len = char.len_utf16() as u32;
+                        loc.column += char_utf16_len;
+                        self.generated_code_column += char_utf16_len;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn advance(&mut self, content: &str) {
+        if content.is_empty() {
+            return;
+        }
+        let mut lines = content.split('\n');
+
+        // SAFETY: In any cases, lines would have at least one element.
+        // "".split('\n') would create `[""]`.
+        // "\n".split('\n') would create `["", ""]`.
+        let last_line = unsafe { lines.next_back().unwrap_unchecked() };
+        for _ in lines {
+            self.bump_line();
+        }
+        self.generated_code_column += last_line.chars().map(|c| c.len_utf16() as u32).sum::<u32>();
+    }
+
+    fn bump_line(&mut self) {
+        self.generated_code_line += 1;
+        self.generated_code_column = 0;
+    }
+}

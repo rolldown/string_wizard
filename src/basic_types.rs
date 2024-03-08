@@ -1,4 +1,4 @@
-use std::{fmt::Debug};
+use std::fmt::Debug;
 
 // This is basically doing the same thing as `TryInto<u32>`.
 // If we use `TryInto<u32>`, we need to put `where <T as TryInto<u32>>::Error: Debug` everywhere.
