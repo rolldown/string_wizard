@@ -18,11 +18,7 @@ fn main() {
         ..Default::default()
     });
 
-    std::fs::write("./demo.map.json", {
-        let mut buf = vec![];
-        sm.to_writer(&mut buf).unwrap();
-        String::from_utf8(buf).unwrap()
-    })
+    std::fs::write("./demo.map.json", sm.to_json_string().unwrap())
     .unwrap();
     std::fs::write("./demo.jsx", s.to_string()).unwrap();
 

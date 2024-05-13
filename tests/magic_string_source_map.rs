@@ -23,11 +23,7 @@ fn basic() {
     });
 
     assert_eq!(
-        {
-            let mut buf = vec![];
-            sm.to_writer(&mut buf).unwrap();
-            String::from_utf8(buf).unwrap()
-        },
+        sm.to_json_string().unwrap(),
         "{\"version\":3,\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"names\":[\"d\",\"v\",\"div\"],\"mappings\":\"AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
     );
 
@@ -37,11 +33,7 @@ fn basic() {
         ..Default::default()
     });
     assert_eq!(
-        {
-            let mut buf = vec![];
-            sm.to_writer(&mut buf).unwrap();
-            String::from_utf8(buf).unwrap()
-        },
+        sm.to_json_string().unwrap(),
         "{\"version\":3,\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"names\":[\"d\",\"v\",\"div\"],\"mappings\":\";AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
     );
 }
