@@ -4,7 +4,7 @@ mod joiner;
 mod locator;
 mod magic_string;
 #[cfg(feature = "source_map")]
-mod source_map;
+mod sourcemap_builder;
 mod span;
 
 type CowStr<'text> = Cow<'text, str>;

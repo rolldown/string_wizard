@@ -17,7 +17,11 @@ fn main() {
         include_content: true,
     });
 
-    std::fs::write("./demo.map.json", sm.to_string()).unwrap();
+    std::fs::write("./demo.map.json",  {
+        let mut buf = vec![];
+        sm.to_writer(&mut buf).unwrap();
+        String::from_utf8(buf).unwrap()
+    }).unwrap();
     std::fs::write("./demo.jsx", s.to_string()).unwrap();
 
     println!("{:#?}", s.to_string());

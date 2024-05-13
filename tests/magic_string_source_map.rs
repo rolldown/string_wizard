@@ -22,8 +22,12 @@ fn basic() {
     });
 
     assert_eq!(
-        sm.mappings,
-        "AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG"
+        {
+            let mut buf = vec![];
+            sm.to_writer(&mut buf).unwrap();
+            String::from_utf8(buf).unwrap()
+        },
+        "{\"version\":3,\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"names\":[\"d\",\"v\",\"div\"],\"mappings\":\"AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
     );
 
     s.prepend("import React from 'react';\n");
@@ -31,7 +35,11 @@ fn basic() {
         include_content: true,
     });
     assert_eq!(
-        sm.mappings,
-        ";AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG"
+        {
+            let mut buf = vec![];
+            sm.to_writer(&mut buf).unwrap();
+            String::from_utf8(buf).unwrap()
+        },
+        "{\"version\":3,\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"names\":[\"d\",\"v\",\"div\"],\"mappings\":\";AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
     );
 }
