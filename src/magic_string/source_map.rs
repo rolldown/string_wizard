@@ -1,22 +1,27 @@
-use crate::{
-    locator::Locator,
-    MagicString,
-    sourcemap_builder::SourcemapBuilder,
-};
+use std::sync::Arc;
 
-#[derive(Debug, Default)]
+use crate::{locator::Locator, sourcemap_builder::SourcemapBuilder, MagicString};
+
+#[derive(Debug)]
 pub struct SourceMapOptions {
     pub include_content: bool,
+    pub source: Arc<str>,
+}
+
+impl Default for SourceMapOptions {
+    fn default() -> Self {
+        Self {
+            include_content: false,
+            source: "".into(),
+        }
+    }
 }
 
 impl<'s> MagicString<'s> {
-    pub fn source_map(&self, opts: SourceMapOptions) -> sourcemap::SourceMap {
+    pub fn source_map(&self, opts: SourceMapOptions) -> oxc::sourcemap::SourceMap {
         let mut source_builder = SourcemapBuilder::new();
 
-        source_builder.set_source("");
-        if opts.include_content {
-            source_builder.set_source_contents(&self.source);
-        }
+        source_builder.set_source_and_content(&opts.source, &self.source);
 
         let locator = Locator::new(&self.source);
 

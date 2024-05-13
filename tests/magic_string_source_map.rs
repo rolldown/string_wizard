@@ -19,27 +19,21 @@ fn basic() {
 
     let sm = s.source_map(SourceMapOptions {
         include_content: true,
+        ..Default::default()
     });
 
     assert_eq!(
-        {
-            let mut buf = vec![];
-            sm.to_writer(&mut buf).unwrap();
-            String::from_utf8(buf).unwrap()
-        },
-        "{\"version\":3,\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"names\":[\"d\",\"v\",\"div\"],\"mappings\":\"AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
+        sm.to_json_string().unwrap(),
+        "{\"version\":3,\"names\":[\"d\",\"v\",\"div\"],\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"mappings\":\"AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
     );
 
     s.prepend("import React from 'react';\n");
     let sm = s.source_map(SourceMapOptions {
         include_content: true,
+        ..Default::default()
     });
     assert_eq!(
-        {
-            let mut buf = vec![];
-            sm.to_writer(&mut buf).unwrap();
-            String::from_utf8(buf).unwrap()
-        },
-        "{\"version\":3,\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"names\":[\"d\",\"v\",\"div\"],\"mappings\":\";AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
+        sm.to_json_string().unwrap(),
+        "{\"version\":3,\"names\":[\"d\",\"v\",\"div\"],\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"mappings\":\";AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
     );
 }
