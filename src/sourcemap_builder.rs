@@ -4,8 +4,8 @@ pub struct SourcemapBuilder {
     generated_code_line: TextSize,
     /// `generated_code_column` is calculated based on utf-16.
     generated_code_column: TextSize,
-    source_id: u32, 
-    source_map_builder: sourcemap::SourceMapBuilder,
+    source_id: u32,
+    source_map_builder: oxc::sourcemap::SourceMapBuilder,
 }
 
 impl SourcemapBuilder {
@@ -14,20 +14,16 @@ impl SourcemapBuilder {
             generated_code_line: 0,
             generated_code_column: 0,
             source_id: 0,
-            source_map_builder: sourcemap::SourceMapBuilder::new(None),
+            source_map_builder: oxc::sourcemap::SourceMapBuilder::default(),
         }
     }
 
-    pub fn into_source_map(self) -> sourcemap::SourceMap {
+    pub fn into_source_map(self) -> oxc::sourcemap::SourceMap {
         self.source_map_builder.into_sourcemap()
     }
 
-    pub fn set_source(&mut self, source: &str)  {
-        self.source_id =  self.source_map_builder.add_source(source);
-    }
-
-    pub fn set_source_contents(&mut self, content: &str) {
-        self.source_map_builder.set_source_contents(self.source_id, Some(content));
+    pub fn set_source_and_content(&mut self, id: &str, content: &str) {
+        self.source_id = self.source_map_builder.set_source_and_content(id, content);
     }
 
     pub fn add_chunk(
@@ -35,13 +31,20 @@ impl SourcemapBuilder {
         chunk: &Chunk,
         locator: &Locator,
         source: &str,
-        name: Option<&str>
+        name: Option<&str>,
     ) {
         let name_id = name.map(|name| self.source_map_builder.add_name(name));
         let mut loc = locator.locate(chunk.start());
         if let Some(edited_content) = &chunk.edited_content {
             if !edited_content.is_empty() {
-                self.source_map_builder.add_raw(self.generated_code_line, self.generated_code_column, loc.line, loc.column, Some(self.source_id), name_id);
+                self.source_map_builder.add_token(
+                    self.generated_code_line,
+                    self.generated_code_column,
+                    loc.line,
+                    loc.column,
+                    Some(self.source_id),
+                    name_id,
+                );
             }
             self.advance(edited_content);
         } else {
@@ -57,7 +60,14 @@ impl SourcemapBuilder {
                     _ => {
                         if new_line {
                             new_line = false;
-                            self.source_map_builder.add_raw(self.generated_code_line, self.generated_code_column, loc.line, loc.column, Some(self.source_id), name_id);
+                            self.source_map_builder.add_token(
+                                self.generated_code_line,
+                                self.generated_code_column,
+                                loc.line,
+                                loc.column,
+                                Some(self.source_id),
+                                name_id,
+                            );
                         }
 
                         let char_utf16_len = char.len_utf16() as u32;

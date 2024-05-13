@@ -19,6 +19,7 @@ fn basic() {
 
     let sm = s.source_map(SourceMapOptions {
         include_content: true,
+        ..Default::default()
     });
 
     assert_eq!(
@@ -33,6 +34,7 @@ fn basic() {
     s.prepend("import React from 'react';\n");
     let sm = s.source_map(SourceMapOptions {
         include_content: true,
+        ..Default::default()
     });
     assert_eq!(
         {

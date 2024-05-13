@@ -15,13 +15,15 @@ fn main() {
 
     let sm = s.source_map(SourceMapOptions {
         include_content: true,
+        ..Default::default()
     });
 
-    std::fs::write("./demo.map.json",  {
+    std::fs::write("./demo.map.json", {
         let mut buf = vec![];
         sm.to_writer(&mut buf).unwrap();
         String::from_utf8(buf).unwrap()
-    }).unwrap();
+    })
+    .unwrap();
     std::fs::write("./demo.jsx", s.to_string()).unwrap();
 
     println!("{:#?}", s.to_string());
