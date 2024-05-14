@@ -36,4 +36,14 @@ fn basic() {
         sm.to_json_string().unwrap(),
         "{\"version\":3,\"names\":[\"d\",\"v\",\"div\"],\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"mappings\":\";AAAA,CAACA,CAAC,CAACC,CAAC;AACJ;AACA,EAAEC,EAAG\"}"
     );
+
+    let sm = s.source_map(SourceMapOptions {
+        include_content: true,
+        hires: true,
+        ..Default::default()
+    });
+    assert_eq!(
+        sm.to_json_string().unwrap(),
+        "{\"version\":3,\"names\":[\"d\",\"v\",\"div\"],\"sources\":[\"\"],\"sourcesContent\":[\"<div>\\n  hello, world\\n</div>\"],\"mappings\":\";AAAA,CAACA,CAAC,CAACC,CAAC,CAAC;AACL,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC;AACd,CAAC,CAACC,EAAG\"}"
+    );
 }
