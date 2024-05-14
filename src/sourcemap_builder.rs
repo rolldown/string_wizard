@@ -6,7 +6,7 @@ pub struct SourcemapBuilder {
     /// `generated_code_column` is calculated based on utf-16.
     generated_code_column: TextSize,
     source_id: u32,
-    source_map_builder: oxc::sourcemap::SourceMapBuilder,
+    source_map_builder: oxc_sourcemap::SourceMapBuilder,
 }
 
 impl SourcemapBuilder {
@@ -16,11 +16,11 @@ impl SourcemapBuilder {
             generated_code_line: 0,
             generated_code_column: 0,
             source_id: 0,
-            source_map_builder: oxc::sourcemap::SourceMapBuilder::default(),
+            source_map_builder: oxc_sourcemap::SourceMapBuilder::default(),
         }
     }
 
-    pub fn into_source_map(self) -> oxc::sourcemap::SourceMap {
+    pub fn into_source_map(self) -> oxc_sourcemap::SourceMap {
         self.source_map_builder.into_sourcemap()
     }
 
