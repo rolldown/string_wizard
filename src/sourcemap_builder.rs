@@ -1,6 +1,7 @@
 use crate::{chunk::Chunk, locator::Locator, TextSize};
 
 pub struct SourcemapBuilder {
+    hires: bool,
     generated_code_line: TextSize,
     /// `generated_code_column` is calculated based on utf-16.
     generated_code_column: TextSize,
@@ -9,8 +10,9 @@ pub struct SourcemapBuilder {
 }
 
 impl SourcemapBuilder {
-    pub fn new() -> Self {
+    pub fn new(hires: bool) -> Self {
         Self {
+            hires,
             generated_code_line: 0,
             generated_code_column: 0,
             source_id: 0,
@@ -51,6 +53,17 @@ impl SourcemapBuilder {
             let chunk_content = chunk.span.text(source);
             let mut new_line = true;
             for char in chunk_content.chars() {
+                // TODO support hires boundary
+                if new_line || self.hires {
+                    self.source_map_builder.add_token(
+                        self.generated_code_line,
+                        self.generated_code_column,
+                        loc.line,
+                        loc.column,
+                        Some(self.source_id),
+                        name_id,
+                    );
+                }
                 match char {
                     '\n' => {
                         loc.bump_line();
@@ -58,21 +71,10 @@ impl SourcemapBuilder {
                         new_line = true;
                     }
                     _ => {
-                        if new_line {
-                            new_line = false;
-                            self.source_map_builder.add_token(
-                                self.generated_code_line,
-                                self.generated_code_column,
-                                loc.line,
-                                loc.column,
-                                Some(self.source_id),
-                                name_id,
-                            );
-                        }
-
                         let char_utf16_len = char.len_utf16() as u32;
                         loc.column += char_utf16_len;
                         self.generated_code_column += char_utf16_len;
+                        new_line = false;
                     }
                 }
             }
