@@ -6,7 +6,7 @@ use crate::{locator::Locator, sourcemap_builder::SourcemapBuilder, MagicString};
 pub struct SourceMapOptions {
     pub include_content: bool,
     pub source: Arc<str>,
-    pub hires: bool
+    pub hires: bool,
 }
 
 impl Default for SourceMapOptions {
@@ -14,7 +14,7 @@ impl Default for SourceMapOptions {
         Self {
             include_content: false,
             source: "".into(),
-            hires: false
+            hires: false,
         }
     }
 }

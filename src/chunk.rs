@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use index_vec::IndexVec;
 
-use crate::{span::Span, CowStr, TextSize};
+use crate::{span::Span, CowStr};
 
 index_vec::define_index_type! {
     pub struct ChunkIdx = u32;
@@ -47,15 +47,15 @@ impl<'s> Chunk<'s> {
 }
 
 impl<'str> Chunk<'str> {
-    pub fn start(&self) -> TextSize {
+    pub fn start(&self) -> usize {
         self.span.start()
     }
 
-    pub fn end(&self) -> TextSize {
+    pub fn end(&self) -> usize {
         self.span.end()
     }
 
-    pub fn contains(&self, text_index: TextSize) -> bool {
+    pub fn contains(&self, text_index: usize) -> bool {
         self.start() < text_index && text_index < self.end()
     }
 
@@ -75,7 +75,7 @@ impl<'str> Chunk<'str> {
         self.intro.push_front(content)
     }
 
-    pub fn split<'a>(&'a mut self, text_index: TextSize) -> Chunk<'str> {
+    pub fn split<'a>(&'a mut self, text_index: usize) -> Chunk<'str> {
         if !(text_index > self.start() && text_index < self.end()) {
             panic!("Cannot split chunk at {text_index} between {:?}", self.span);
         }

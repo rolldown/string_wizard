@@ -1,5 +1,7 @@
+pub mod append;
 pub mod indent;
-pub mod mutation;
+pub mod movement;
+pub mod prepend;
 #[cfg(feature = "source_map")]
 pub mod source_map;
 pub mod update;
@@ -10,10 +12,9 @@ use once_cell::sync::OnceCell;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    basic_types::AssertIntoU32,
     chunk::{Chunk, ChunkIdx, ChunkVec},
     span::Span,
-    CowStr, TextSize,
+    CowStr,
 };
 
 #[derive(Debug, Default)]
@@ -27,12 +28,12 @@ pub struct MagicString<'s> {
     intro: VecDeque<CowStr<'s>>,
     outro: VecDeque<CowStr<'s>>,
     source: CowStr<'s>,
-    source_len: TextSize,
+    source_len: usize,
     chunks: ChunkVec<'s>,
     first_chunk_idx: ChunkIdx,
     last_chunk_idx: ChunkIdx,
-    chunk_by_start: FxHashMap<TextSize, ChunkIdx>,
-    chunk_by_end: FxHashMap<TextSize, ChunkIdx>,
+    chunk_by_start: FxHashMap<usize, ChunkIdx>,
+    chunk_by_end: FxHashMap<usize, ChunkIdx>,
     guessed_indentor: OnceCell<String>,
 
     // This is used to speed up the search for the chunk that contains a given index.
@@ -48,7 +49,7 @@ impl<'text> MagicString<'text> {
 
     pub fn with_options(source: impl Into<CowStr<'text>>, options: MagicStringOptions) -> Self {
         let source = source.into();
-        let source_len = u32::try_from(source.len()).unwrap();
+        let source_len = source.len();
         let initial_chunk = Chunk::new(Span(0, source_len));
         let mut chunks = ChunkVec::with_capacity(1);
         let initial_chunk_idx = chunks.push(initial_chunk);
@@ -74,88 +75,6 @@ impl<'text> MagicString<'text> {
             .insert(source_len, initial_chunk_idx);
 
         magic_string
-    }
-
-    pub fn append(&mut self, source: impl Into<CowStr<'text>>) -> &mut Self {
-        self.append_outro(source.into());
-        self
-    }
-
-    /// # Example
-    ///```rust
-    /// use string_wizard::MagicString;
-    /// let mut s = MagicString::new("01234");
-    /// s.append_left(2, "a");
-    /// s.append_left(2, "b");
-    /// assert_eq!(s.to_string(), "01ab234")
-    ///```
-    pub fn append_left(
-        &mut self,
-        text_index: impl AssertIntoU32,
-        content: impl Into<CowStr<'text>>,
-    ) -> &mut Self {
-        match self.by_end_mut(text_index.assert_into_u32()) {
-            Some(chunk) => {
-                chunk.append_outro(content.into());
-            }
-            None => self.append_intro(content.into()),
-        }
-        self
-    }
-
-    /// # Example
-    /// ```rust
-    /// use string_wizard::MagicString;
-    /// let mut s = MagicString::new("01234");
-    /// s.append_right(2, "A");
-    /// s.append_right(2, "B");
-    /// s.append_left(2, "a");
-    /// s.append_left(2, "b");
-    /// assert_eq!(s.to_string(), "01abAB234")
-    ///```
-    pub fn append_right(
-        &mut self,
-        text_index: impl AssertIntoU32,
-        content: impl Into<CowStr<'text>>,
-    ) -> &mut Self {
-        match self.by_start_mut(text_index.assert_into_u32()) {
-            Some(chunk) => {
-                chunk.append_intro(content.into());
-            }
-            None => self.append_outro(content.into()),
-        }
-        self
-    }
-
-    pub fn prepend(&mut self, source: impl Into<CowStr<'text>>) -> &mut Self {
-        self.prepend_intro(source.into());
-        self
-    }
-
-    pub fn prepend_left(
-        &mut self,
-        text_index: impl AssertIntoU32,
-        content: impl Into<CowStr<'text>>,
-    ) -> &mut Self {
-        match self.by_end_mut(text_index.assert_into_u32()) {
-            Some(chunk) => chunk.prepend_outro(content.into()),
-            None => self.prepend_intro(content.into()),
-        }
-        self
-    }
-
-    pub fn prepend_right(
-        &mut self,
-        text_index: impl AssertIntoU32,
-        content: impl Into<CowStr<'text>>,
-    ) -> &mut Self {
-        match self.by_start_mut(text_index.assert_into_u32()) {
-            Some(chunk) => {
-                chunk.prepend_intro(content.into());
-            }
-            None => self.prepend_outro(content.into()),
-        }
-        self
     }
 
     pub fn len(&self) -> usize {
@@ -188,7 +107,7 @@ impl<'text> MagicString<'text> {
     }
 
     fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
-        ChunkIter {
+        IterChunks {
             next: Some(self.first_chunk_idx),
             chunks: &self.chunks,
         }
@@ -211,7 +130,7 @@ impl<'text> MagicString<'text> {
     ///
     /// Chunk{span: (0, 3)} => "abc"
     /// Chunk{span: (3, 7)} => "defg"
-    fn split_at(&mut self, at_index: u32) {
+    fn split_at(&mut self, at_index: usize) {
         if at_index == 0 || at_index >= self.source_len || self.chunk_by_end.contains_key(&at_index)
         {
             return;
@@ -221,9 +140,12 @@ impl<'text> MagicString<'text> {
             let last_searched_chunk = &self.chunks[self.last_searched_chunk_idx];
             let search_right = at_index > last_searched_chunk.end();
 
-            (last_searched_chunk, self.last_searched_chunk_idx, search_right)
+            (
+                last_searched_chunk,
+                self.last_searched_chunk_idx,
+                search_right,
+            )
         };
-        
 
         while !candidate.contains(at_index) {
             let next_idx = if search_right {
@@ -261,8 +183,7 @@ impl<'text> MagicString<'text> {
         }
     }
 
-    fn by_start_mut(&mut self, text_index: impl AssertIntoU32) -> Option<&mut Chunk<'text>> {
-        let text_index = text_index.assert_into_u32();
+    fn by_start_mut(&mut self, text_index: usize) -> Option<&mut Chunk<'text>> {
         if text_index == self.source_len {
             None
         } else {
@@ -273,8 +194,7 @@ impl<'text> MagicString<'text> {
         }
     }
 
-    fn by_end_mut(&mut self, text_index: TextSize) -> Option<&mut Chunk<'text>> {
-        let text_index = text_index.assert_into_u32();
+    fn by_end_mut(&mut self, text_index: usize) -> Option<&mut Chunk<'text>> {
         if text_index == 0 {
             None
         } else {
@@ -286,12 +206,12 @@ impl<'text> MagicString<'text> {
     }
 }
 
-struct ChunkIter<'a> {
+struct IterChunks<'a> {
     next: Option<ChunkIdx>,
     chunks: &'a ChunkVec<'a>,
 }
 
-impl<'a> Iterator for ChunkIter<'a> {
+impl<'a> Iterator for IterChunks<'a> {
     type Item = &'a Chunk<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -1,12 +1,12 @@
-use crate::{basic_types::AssertIntoU32, MagicString};
+use crate::MagicString;
 
 use super::update::UpdateOptions;
 
 impl<'text> MagicString<'text> {
-    pub fn remove(&mut self, start: impl AssertIntoU32, end: impl AssertIntoU32) -> &mut Self {
+    pub fn remove(&mut self, start: usize, end: usize) -> &mut Self {
         self.update_with_inner(
-            start.assert_into_u32(),
-            end.assert_into_u32(),
+            start,
+            end,
             "".into(),
             UpdateOptions {
                 keep_original: false,
@@ -20,15 +20,7 @@ impl<'text> MagicString<'text> {
 
     /// Moves the characters from start and end to index. Returns this.
     // `move` is reserved keyword in rust, so we use `relocate` instead.
-    pub fn relocate(
-        &mut self,
-        start: impl AssertIntoU32,
-        end: impl AssertIntoU32,
-        to: impl AssertIntoU32,
-    ) -> &mut Self {
-        let start = start.assert_into_u32();
-        let end = end.assert_into_u32();
-        let to = to.assert_into_u32();
+    pub fn relocate(&mut self, start: usize, end: usize, to: usize) -> &mut Self {
         if to >= start && to <= end {
             panic!("Cannot relocate a selection inside itself")
         }

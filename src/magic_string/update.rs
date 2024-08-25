@@ -1,4 +1,4 @@
-use crate::{basic_types::AssertIntoU32, chunk::EditOptions, CowStr, MagicString};
+use crate::{chunk::EditOptions, CowStr, MagicString};
 
 #[derive(Debug, Default, Clone)]
 pub struct UpdateOptions {
@@ -13,8 +13,8 @@ impl<'text> MagicString<'text> {
     /// A shorthand for `update_with(start, end, content, Default::default())`;
     pub fn update(
         &mut self,
-        start: impl AssertIntoU32,
-        end: impl AssertIntoU32,
+        start: usize,
+        end: usize,
         content: impl Into<CowStr<'text>>,
     ) -> &mut Self {
         self.update_with(start, end, content, Default::default())
@@ -22,18 +22,12 @@ impl<'text> MagicString<'text> {
 
     pub fn update_with(
         &mut self,
-        start: impl AssertIntoU32,
-        end: impl AssertIntoU32,
+        start: usize,
+        end: usize,
         content: impl Into<CowStr<'text>>,
         opts: UpdateOptions,
     ) -> &mut Self {
-        self.update_with_inner(
-            start.assert_into_u32(),
-            end.assert_into_u32(),
-            content.into(),
-            opts,
-            true,
-        );
+        self.update_with_inner(start, end, content.into(), opts, true);
         self
     }
 
@@ -41,14 +35,12 @@ impl<'text> MagicString<'text> {
 
     pub(super) fn update_with_inner(
         &mut self,
-        start: u32,
-        end: u32,
+        start: usize,
+        end: usize,
         content: CowStr<'text>,
         opts: UpdateOptions,
         panic_if_start_equal_end: bool,
     ) -> &mut Self {
-        let start = start as u32;
-        let end = end as u32;
         if panic_if_start_equal_end && start == end {
             panic!(
                 "Cannot overwrite a zero-length range – use append_left or prepend_right instead"

@@ -1,4 +1,4 @@
-use crate::{MagicString, CowStr};
+use crate::{CowStr, MagicString};
 
 pub struct JoinerOptions {
     pub separator: Option<String>,
@@ -58,6 +58,4 @@ impl<'s> Joiner<'s> {
         }
         iter
     }
-
-    
 }

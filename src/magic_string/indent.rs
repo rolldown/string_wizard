@@ -1,17 +1,17 @@
 use std::borrow::Cow;
 
-use crate::{CowStr, MagicString, TextSize};
+use crate::{CowStr, MagicString};
 
 struct ExcludeSet<'a> {
-    exclude: &'a [(TextSize, TextSize)],
+    exclude: &'a [(usize, usize)],
 }
 
 impl<'a> ExcludeSet<'a> {
-    fn new(exclude: &'a [(TextSize, TextSize)]) -> Self {
+    fn new(exclude: &'a [(usize, usize)]) -> Self {
         Self { exclude }
     }
 
-    fn contains(&self, index: TextSize) -> bool {
+    fn contains(&self, index: usize) -> bool {
         self.exclude.iter().any(|s| s.0 <= index && index < s.1)
     }
 }
@@ -50,13 +50,13 @@ pub fn guess_indentor(source: &str) -> Option<String> {
 
 #[derive(Debug, Default)]
 pub struct IndentOptions<'a, 'b> {
-    /// MagicString will guess the `indentor`` from lines of the source if passed `None`.
+    /// MagicString will guess the `indentor` from lines of the source if passed `None`.
     pub indentor: Option<&'a str>,
 
     /// The reason I use `[u32; 2]` instead of `(u32, u32)` to represent a range of text is that
     /// I want to emphasize that the `[u32; 2]` is the closed interval, which means both the start
     /// and the end are included in the range.
-    pub exclude: &'b [(TextSize, TextSize)],
+    pub exclude: &'b [(usize, usize)],
 }
 
 impl<'text> MagicString<'text> {
@@ -111,7 +111,7 @@ impl<'text> MagicString<'text> {
         let exclude_set = ExcludeSet::new(opts.exclude);
 
         let mut next_chunk_id = Some(self.first_chunk_idx);
-        let mut char_index = 0u32;
+        let mut char_index = 0;
         while let Some(chunk_idx) = next_chunk_id {
             // Make sure the `next_chunk_id` is updated before we split the chunk. Otherwise, we
             // might process the same chunk twice.
@@ -136,7 +136,7 @@ impl<'text> MagicString<'text> {
                             line_starts.push(char_index);
                         }
                     }
-                    char_index += char.len_utf8() as u32;
+                    char_index += char.len_utf8();
                 }
                 for line_start in line_starts {
                     self.prepend_right(line_start, indent_replacer.indentor.clone());

@@ -21,7 +21,7 @@ fn get_bunch_of_strings() -> Vec<String> {
 
 fn criterion_benchmark(c: &mut Criterion) {
     let bunch_of_strings = get_bunch_of_strings();
-  
+
     let mut joiner = string_wizard::Joiner::new();
     bunch_of_strings.clone().into_iter().for_each(|s| {
         joiner.append_raw(s);

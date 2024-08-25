@@ -1,10 +1,10 @@
-use crate::{chunk::Chunk, locator::Locator, TextSize};
+use crate::{chunk::Chunk, locator::Locator};
 
 pub struct SourcemapBuilder {
     hires: bool,
-    generated_code_line: TextSize,
+    generated_code_line: usize,
     /// `generated_code_column` is calculated based on utf-16.
-    generated_code_column: TextSize,
+    generated_code_column: usize,
     source_id: u32,
     source_map_builder: oxc_sourcemap::SourceMapBuilder,
 }
@@ -40,10 +40,10 @@ impl SourcemapBuilder {
         if let Some(edited_content) = &chunk.edited_content {
             if !edited_content.is_empty() {
                 self.source_map_builder.add_token(
-                    self.generated_code_line,
-                    self.generated_code_column,
-                    loc.line,
-                    loc.column,
+                    self.generated_code_line as u32,
+                    self.generated_code_column as u32,
+                    loc.line as u32,
+                    loc.column as u32,
                     Some(self.source_id),
                     name_id,
                 );
@@ -56,10 +56,10 @@ impl SourcemapBuilder {
                 // TODO support hires boundary
                 if new_line || self.hires {
                     self.source_map_builder.add_token(
-                        self.generated_code_line,
-                        self.generated_code_column,
-                        loc.line,
-                        loc.column,
+                        self.generated_code_line as u32,
+                        self.generated_code_column as u32,
+                        loc.line as u32,
+                        loc.column as u32,
                         Some(self.source_id),
                         name_id,
                     );
@@ -71,7 +71,7 @@ impl SourcemapBuilder {
                         new_line = true;
                     }
                     _ => {
-                        let char_utf16_len = char.len_utf16() as u32;
+                        let char_utf16_len = char.len_utf16();
                         loc.column += char_utf16_len;
                         self.generated_code_column += char_utf16_len;
                         new_line = false;
@@ -94,7 +94,7 @@ impl SourcemapBuilder {
         for _ in lines {
             self.bump_line();
         }
-        self.generated_code_column += last_line.chars().map(|c| c.len_utf16() as u32).sum::<u32>();
+        self.generated_code_column += last_line.chars().map(|c| c.len_utf16()).sum::<usize>();
     }
 
     fn bump_line(&mut self) {

@@ -18,7 +18,7 @@ impl Locator {
     }
 
     /// Pass the index based on utf-16 and return the [Location] based on utf-16
-    pub fn locate(&self, index: u32) -> Location {
+    pub fn locate(&self, index: usize) -> Location {
         let index = index as usize;
 
         let mut left_cursor = 0;
@@ -42,9 +42,9 @@ impl Locator {
 
 #[derive(Debug, PartialEq)]
 pub struct Location {
-    pub line: u32,
+    pub line: usize,
     // columns are calculated based on utf-16
-    pub column: u32,
+    pub column: usize,
 }
 
 impl Location {

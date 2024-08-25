@@ -18,8 +18,7 @@ fn main() {
         ..Default::default()
     });
 
-    std::fs::write("./demo.map.json", sm.to_json_string().unwrap())
-    .unwrap();
+    std::fs::write("./demo.map.json", sm.to_json_string().unwrap()).unwrap();
     std::fs::write("./demo.jsx", s.to_string()).unwrap();
 
     println!("{:#?}", s.to_string());

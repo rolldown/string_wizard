@@ -1,4 +1,4 @@
-use string_wizard::{Joiner, MagicString, JoinerOptions};
+use string_wizard::{Joiner, JoinerOptions, MagicString};
 mod append {
     use super::*;
 
@@ -13,7 +13,9 @@ mod append {
 
 #[test]
 fn separator() {
-    let mut j = Joiner::with_options(JoinerOptions { separator: Some(",".to_string()) });
+    let mut j = Joiner::with_options(JoinerOptions {
+        separator: Some(",".to_string()),
+    });
     j.append_raw("123");
     assert_eq!(j.join(), "123");
     j.append_raw("123");
