@@ -11,8 +11,8 @@ type CowStr<'text> = Cow<'text, str>;
 use std::borrow::Cow;
 
 pub use crate::{
-    joiner::{Joiner, JoinerOptions},
-    magic_string::{indent::IndentOptions, update::UpdateOptions, MagicString, MagicStringOptions},
+  joiner::{Joiner, JoinerOptions},
+  magic_string::{indent::IndentOptions, update::UpdateOptions, MagicString, MagicStringOptions},
 };
 
 #[cfg(feature = "source_map")]
