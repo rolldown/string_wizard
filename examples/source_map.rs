@@ -12,7 +12,7 @@ fn main() {
 
   let sm = s.source_map(SourceMapOptions { include_content: true, ..Default::default() });
 
-  std::fs::write("./demo.map.json", sm.to_json_string().unwrap()).unwrap();
+  std::fs::write("./demo.map.json", sm.to_json_string()).unwrap();
   std::fs::write("./demo.jsx", s.to_string()).unwrap();
 
   println!("{:#?}", s.to_string());

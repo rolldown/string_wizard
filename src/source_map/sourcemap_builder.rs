@@ -31,7 +31,11 @@ impl SourcemapBuilder {
   }
 
   pub fn add_chunk(&mut self, chunk: &Chunk, locator: &Locator, source: &str, name: Option<&str>) {
-    let name_id = name.map(|name| self.source_map_builder.add_name(name));
+    let name_id = if chunk.keep_in_mappings {
+      name.map(|name| self.source_map_builder.add_name(name))
+    } else {
+      None
+    };
     let mut loc = locator.locate(chunk.start());
     if let Some(edited_content) = &chunk.edited_content {
       if !edited_content.is_empty() {
