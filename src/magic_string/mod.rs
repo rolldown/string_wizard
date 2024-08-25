@@ -12,9 +12,7 @@ use once_cell::sync::OnceCell;
 use rustc_hash::FxHashMap;
 
 use crate::{
-  chunk::{Chunk, ChunkIdx, ChunkVec},
-  span::Span,
-  CowStr,
+  chunk::{Chunk, ChunkIdx}, span::Span, type_aliases::IndexChunks, CowStr
 };
 
 #[derive(Debug, Default)]
@@ -29,7 +27,7 @@ pub struct MagicString<'s> {
   outro: VecDeque<CowStr<'s>>,
   source: CowStr<'s>,
   source_len: usize,
-  chunks: ChunkVec<'s>,
+  chunks: IndexChunks<'s>,
   first_chunk_idx: ChunkIdx,
   last_chunk_idx: ChunkIdx,
   chunk_by_start: FxHashMap<usize, ChunkIdx>,
@@ -51,7 +49,7 @@ impl<'text> MagicString<'text> {
     let source = source.into();
     let source_len = source.len();
     let initial_chunk = Chunk::new(Span(0, source_len));
-    let mut chunks = ChunkVec::with_capacity(1);
+    let mut chunks = IndexChunks::with_capacity(1);
     let initial_chunk_idx = chunks.push(initial_chunk);
     let mut magic_string = Self {
       intro: Default::default(),
@@ -197,18 +195,21 @@ impl<'text> MagicString<'text> {
 
 struct IterChunks<'a> {
   next: Option<ChunkIdx>,
-  chunks: &'a ChunkVec<'a>,
+  chunks: &'a IndexChunks<'a>,
 }
 
 impl<'a> Iterator for IterChunks<'a> {
   type Item = &'a Chunk<'a>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    self.next.take().map(|next| {
-      let chunk = &self.chunks[next];
-      self.next = chunk.next;
-
-      chunk
-    })
+    match self.next {
+      None => None,
+      Some(idx) => {
+        let chunk = &self.chunks[idx];
+        self.next = chunk.next;
+        Some(chunk)
+      }
+    }
+    
   }
 }

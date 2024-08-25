@@ -27,13 +27,13 @@ impl<'text> MagicString<'text> {
     content: impl Into<CowStr<'text>>,
     opts: UpdateOptions,
   ) -> &mut Self {
-    self.update_with_inner(start, end, content.into(), opts, true);
+    self.inner_update_with(start, end, content.into(), opts, true);
     self
   }
 
   // --- private
 
-  pub(super) fn update_with_inner(
+  pub(super) fn inner_update_with(
     &mut self,
     start: usize,
     end: usize,

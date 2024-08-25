@@ -4,7 +4,7 @@ use super::update::UpdateOptions;
 
 impl<'text> MagicString<'text> {
   pub fn remove(&mut self, start: usize, end: usize) -> &mut Self {
-    self.update_with_inner(
+    self.inner_update_with(
       start,
       end,
       "".into(),

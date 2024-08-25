@@ -5,6 +5,7 @@ mod magic_string;
 #[cfg(feature = "source_map")]
 mod sourcemap_builder;
 mod span;
+mod type_aliases;
 
 type CowStr<'text> = Cow<'text, str>;
 
