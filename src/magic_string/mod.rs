@@ -6,9 +6,8 @@ pub mod prepend;
 pub mod source_map;
 pub mod update;
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, sync::OnceLock};
 
-use once_cell::sync::OnceCell;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -32,7 +31,7 @@ pub struct MagicString<'s> {
   last_chunk_idx: ChunkIdx,
   chunk_by_start: FxHashMap<usize, ChunkIdx>,
   chunk_by_end: FxHashMap<usize, ChunkIdx>,
-  guessed_indentor: OnceCell<String>,
+  guessed_indentor: OnceLock<String>,
 
   // This is used to speed up the search for the chunk that contains a given index.
   last_searched_chunk_idx: ChunkIdx,
@@ -63,7 +62,7 @@ impl<'text> MagicString<'text> {
       chunk_by_end: Default::default(),
       // setup options
       filename: options.filename,
-      guessed_indentor: OnceCell::default(),
+      guessed_indentor: OnceLock::default(),
       last_searched_chunk_idx: initial_chunk_idx,
     };
 
