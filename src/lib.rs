@@ -1,22 +1,18 @@
-mod basic_types;
 mod chunk;
 mod joiner;
-mod locator;
 mod magic_string;
 #[cfg(feature = "source_map")]
-mod sourcemap_builder;
+mod source_map;
 mod span;
+mod type_aliases;
 
-type CowStr<'text> = Cow<'text, str>;
-
-pub(crate) type TextSize = u32;
+type CowStr<'a> = Cow<'a, str>;
 
 use std::borrow::Cow;
 
-
 pub use crate::{
-    joiner::{Joiner, JoinerOptions},
-    magic_string::{update::UpdateOptions, MagicString, MagicStringOptions, indent::IndentOptions},
+  joiner::{Joiner, JoinerOptions},
+  magic_string::{indent::IndentOptions, update::UpdateOptions, MagicString, MagicStringOptions},
 };
 
 #[cfg(feature = "source_map")]
