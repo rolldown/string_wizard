@@ -8,7 +8,7 @@ impl Locator {
   pub fn new(source: &str) -> Self {
     let mut line_offsets = vec![];
     let mut line_start_pos = 0;
-    for line in source.lines() {
+    for line in source.split('\n') {
       line_offsets.push(line_start_pos);
       line_start_pos += 1 + line.chars().map(|c| c.len_utf16()).sum::<usize>();
     }
@@ -74,4 +74,11 @@ fn special_chars() {
   assert_eq!(locator.locate(0), Location { line: 0, column: 0 });
   assert_eq!(locator.locate(4), Location { line: 1, column: 0 });
   assert_eq!(locator.locate(6), Location { line: 1, column: 2 });
+}
+
+#[test]
+fn edge_cases() {
+  let locator = Locator::new("");
+  assert_eq!(locator.line_offsets.len(), 1);
+  assert_eq!(locator.locate(0), Location { line: 0, column: 0 });
 }

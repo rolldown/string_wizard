@@ -60,7 +60,7 @@ pub struct IndentOptions<'a, 'b> {
 }
 
 impl<'text> MagicString<'text> {
-  pub fn guessed_indentor(&mut self) -> &str {
+  fn guessed_indentor(&mut self) -> &str {
     let guessed_indentor = self
       .guessed_indentor
       .get_or_init(|| guess_indentor(&self.source).unwrap_or_else(|| "\t".to_string()));

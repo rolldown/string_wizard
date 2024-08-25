@@ -44,7 +44,7 @@ impl<'text> MagicString<'text> {
   }
 
   pub fn with_options(source: impl Into<CowStr<'text>>, options: MagicStringOptions) -> Self {
-    let source = source.into();
+    let source: CowStr = source.into();
     let source_len = source.len();
     let initial_chunk = Chunk::new(Span(0, source_len));
     let mut chunks = IndexChunks::with_capacity(1);
@@ -58,7 +58,6 @@ impl<'text> MagicString<'text> {
       chunks,
       chunk_by_start: Default::default(),
       chunk_by_end: Default::default(),
-      // setup options
       filename: options.filename,
       guessed_indentor: OnceLock::default(),
       last_searched_chunk_idx: initial_chunk_idx,

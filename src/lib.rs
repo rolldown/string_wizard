@@ -7,7 +7,7 @@ mod sourcemap_builder;
 mod span;
 mod type_aliases;
 
-type CowStr<'text> = Cow<'text, str>;
+type CowStr<'a> = Cow<'a, str>;
 
 use std::borrow::Cow;
 
