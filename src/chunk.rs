@@ -6,7 +6,6 @@ index_vec::define_index_type! {
     pub struct ChunkIdx = u32;
 }
 
-
 #[derive(Debug)]
 pub struct EditOptions {
   /// `true` will clear the `intro` and `outro` of the [Chunk]

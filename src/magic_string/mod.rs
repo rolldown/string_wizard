@@ -11,7 +11,10 @@ use std::{collections::VecDeque, sync::OnceLock};
 use rustc_hash::FxHashMap;
 
 use crate::{
-  chunk::{Chunk, ChunkIdx}, span::Span, type_aliases::IndexChunks, CowStr
+  chunk::{Chunk, ChunkIdx},
+  span::Span,
+  type_aliases::IndexChunks,
+  CowStr,
 };
 
 #[derive(Debug, Default)]
@@ -206,6 +209,5 @@ impl<'a> Iterator for IterChunks<'a> {
         Some(chunk)
       }
     }
-    
   }
 }

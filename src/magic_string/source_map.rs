@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::{locator::Locator, sourcemap_builder::SourcemapBuilder, MagicString};
+use crate::{
+  source_map::{locator::Locator, sourcemap_builder::SourcemapBuilder},
+  MagicString,
+};
 
 #[derive(Debug)]
 pub struct SourceMapOptions {

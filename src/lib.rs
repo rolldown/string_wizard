@@ -1,9 +1,8 @@
 mod chunk;
 mod joiner;
-mod locator;
 mod magic_string;
 #[cfg(feature = "source_map")]
-mod sourcemap_builder;
+mod source_map;
 mod span;
 mod type_aliases;
 

@@ -1,4 +1,6 @@
-use crate::{chunk::Chunk, locator::Locator};
+use crate::chunk::Chunk;
+
+use super::locator::Locator;
 
 pub struct SourcemapBuilder {
   hires: bool,
