@@ -25,7 +25,6 @@ pub struct MagicString<'s> {
   intro: VecDeque<CowStr<'s>>,
   outro: VecDeque<CowStr<'s>>,
   source: CowStr<'s>,
-  source_len: usize,
   chunks: IndexChunks<'s>,
   first_chunk_idx: ChunkIdx,
   last_chunk_idx: ChunkIdx,
@@ -54,7 +53,6 @@ impl<'text> MagicString<'text> {
       intro: Default::default(),
       outro: Default::default(),
       source,
-      source_len,
       first_chunk_idx: initial_chunk_idx,
       last_chunk_idx: initial_chunk_idx,
       chunks,
@@ -123,7 +121,7 @@ impl<'text> MagicString<'text> {
   /// Chunk{span: (0, 3)} => "abc"
   /// Chunk{span: (3, 7)} => "defg"
   fn split_at(&mut self, at_index: usize) {
-    if at_index == 0 || at_index >= self.source_len || self.chunk_by_end.contains_key(&at_index) {
+    if at_index == 0 || at_index >= self.source.len() || self.chunk_by_end.contains_key(&at_index) {
       return;
     }
 
@@ -170,7 +168,7 @@ impl<'text> MagicString<'text> {
   }
 
   fn by_start_mut(&mut self, text_index: usize) -> Option<&mut Chunk<'text>> {
-    if text_index == self.source_len {
+    if text_index == self.source.len() {
       None
     } else {
       self.split_at(text_index);
