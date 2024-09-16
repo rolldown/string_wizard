@@ -2,6 +2,7 @@ pub mod append;
 pub mod indent;
 pub mod movement;
 pub mod prepend;
+pub mod token;
 #[cfg(feature = "source_map")]
 pub mod source_map;
 pub mod update;
@@ -211,3 +212,5 @@ impl<'a> Iterator for IterChunks<'a> {
     }
   }
 }
+
+
